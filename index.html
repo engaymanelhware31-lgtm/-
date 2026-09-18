@@ -274,6 +274,96 @@ localStorage.removeItem('mahaseba_logged_in');
 document.getElementById('login').style.display='flex';
 document.getElementById('loginPass').value='';
 }
+
+function reportCustomerStatements(){
+  if(!db.customers || !db.customers.length){
+    alert('لا يوجد عملاء مسجلون.');
+    return;
+  }
+
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, s => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  }[s]));
+
+  const money = (v) => Number(v || 0).toLocaleString('ar-KW',{
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
+  });
+
+  const rows = db.customers.map((c, i) => {
+    const paid = (db.receipts || [])
+      .filter(r => String(r.customerId ?? '') === String(c.id ?? '') ||
+                   (!r.customerId && String(r.customer ?? '') === String(c.name ?? '')))
+      .reduce((sum,r) => sum + Number(r.amount || 0), 0);
+
+    const value = Number(c.value || 0);
+    const remaining = Math.max(0, value - paid);
+
+    return `
+      <section class="statement-card">
+        <div class="statement-head">
+          <h2>كشف حساب العميل</h2>
+          <div>رقم العميل: ${esc(c.no)}</div>
+        </div>
+
+        <table class="statement-info">
+          <tr><th>اسم العميل</th><td>${esc(c.name)}</td></tr>
+          <tr><th>رقم الهاتف</th><td>${esc(c.phone)}</td></tr>
+          <tr><th>اسم المشروع</th><td>${esc(c.project)}</td></tr>
+          <tr><th>عنوان المشروع</th><td>${esc(c.address)}</td></tr>
+          <tr><th>قيمة المشروع</th><td>${money(value)}</td></tr>
+          <tr><th>المدفوع</th><td>${money(paid)}</td></tr>
+          <tr><th>المتبقي</th><td>${money(remaining)}</td></tr>
+        </table>
+
+        <div class="statement-footer">
+          <span>إجمالي المشروع: <strong>${money(value)}</strong></span>
+          <span>المدفوع: <strong>${money(paid)}</strong></span>
+          <span>المتبقي: <strong>${money(remaining)}</strong></span>
+        </div>
+      </section>
+      ${i < db.customers.length - 1 ? '<div class="page-break"></div>' : ''}
+    `;
+  }).join('');
+
+  const w=window.open('','_blank');
+  w.document.write(`
+    <!doctype html>
+    <html lang="ar" dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <title>كشف حساب العملاء</title>
+      <style>
+        *{box-sizing:border-box}
+        body{font-family:Arial,Tahoma,sans-serif;margin:0;padding:30px;background:#fff;color:#222}
+        .print-bar{display:flex;justify-content:center;margin-bottom:20px}
+        .print-btn{background:#123b66;color:#fff;border:0;padding:12px 26px;border-radius:7px;font-size:16px;cursor:pointer}
+        .report-title{text-align:center;margin:0 0 25px;font-size:26px}
+        .statement-card{border:1px solid #cfcfcf;border-radius:10px;padding:22px;margin-bottom:10px}
+        .statement-head{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #123b66;padding-bottom:12px;margin-bottom:16px}
+        .statement-head h2{margin:0;color:#123b66}
+        .statement-info{width:100%;border-collapse:collapse}
+        .statement-info th,.statement-info td{border:1px solid #ddd;padding:11px;text-align:right}
+        .statement-info th{width:28%;background:#f3f5f7}
+        .statement-footer{display:flex;justify-content:space-between;gap:12px;margin-top:18px;padding:14px;background:#f5f7fa;border-radius:7px}
+        .page-break{page-break-after:always}
+        @media print{
+          body{padding:0}
+          .print-bar{display:none}
+          .statement-card{border:1px solid #aaa}
+        }
+      </style>
+    </head>
+    <body>
+      <div class="print-bar"><button class="print-btn" onclick="window.print()">طباعة</button></div>
+      <h1 class="report-title">${esc(db.companyName || 'محاسبه')} - كشف حساب العملاء</h1>
+      ${rows}
+    </body>
+    </html>
+  `);
+  w.document.close();
+}
+
 function reportCustomers(){
 let rows=db.customers.map(x=>`<tr><td>${x.no}</td><td>${x.name}</td><td>${x.phone}</td><td>${x.project||''}</td><td>${x.address||''}</td><td>${money(x.value)}</td></tr>`).join('');
 printDoc('تقرير العملاء',documentHeader('تقرير العملاء','—')+`<table><tr><th>رقم العميل</th><th>اسم العميل</th><th>الهاتف</th><th>المشروع</th><th>العنوان</th><th>قيمة المشروع</th></tr>${rows}</table>`);
