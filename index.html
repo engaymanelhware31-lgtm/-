@@ -21,9 +21,21 @@ input,select,textarea{width:100%;padding:11px;border:1px solid #d5dbe3;border-ra
 table{width:100%;border-collapse:collapse;background:white}th,td{padding:12px;border-bottom:1px solid #eee;text-align:right}
 .empty{padding:30px;text-align:center;color:#777}
 .notice{background:#fff8df;padding:12px;border-radius:8px;margin-bottom:16px}
+#login{position:fixed;inset:0;background:#f4f6f9;display:flex;align-items:center;justify-content:center;z-index:10}
+.loginbox{width:min(420px,92%);background:white;padding:30px;border-radius:14px;box-shadow:0 5px 25px #0002}.loginbox h1{text-align:center;margin-top:0}
+.printbtn{background:#555;margin-top:8px}
+@media print{header,nav,.no-print{display:none!important}section{display:none!important}.print-area{display:block!important}.container{margin:0;max-width:none}}
 </style>
 </head>
 <body>
+<div id="login">
+<div class="loginbox">
+<h1>محاسبه</h1>
+<label>اسم المستخدم</label><input id="loginUser">
+<label>كلمة المرور</label><input id="loginPass" type="password">
+<button onclick="login()" style="width:100%">دخول</button>
+</div>
+</div>
 <header><h1>محاسبه</h1><span class="badge">يعمل محليًا بدون إنترنت أو سيرفر</span></header>
 <div class="container">
 <nav>
@@ -32,6 +44,7 @@ table{width:100%;border-collapse:collapse;background:white}th,td{padding:12px;bo
 <button onclick="show('receipt')">سند قبض</button>
 <button onclick="show('payment')">سند صرف</button>
 <button onclick="show('employees')">الموظفين</button>
+<button onclick="show('company')">تفاصيل الشركة</button>
 <button onclick="show('salaries')">الرواتب</button>
 </nav>
 
@@ -46,8 +59,15 @@ table{width:100%;border-collapse:collapse;background:white}th,td{padding:12px;bo
 </section>
 
 <section id="customers">
-<div class="card"><h2>إضافة عميل</h2>
-<div class="formgrid"><div><label>اسم العميل</label><input id="custName"></div><div><label>الهاتف</label><input id="custPhone"></div></div>
+<div class="card"><h2>بيانات العميل</h2>
+<div class="formgrid">
+<div><label>رقم العميل</label><input id="custNo" readonly placeholder="يتم توليده آليًا"></div>
+<div><label>اسم العميل</label><input id="custName"></div>
+<div><label>رقم الهاتف</label><input id="custPhone"></div>
+<div><label>اسم المشروع</label><input id="custProject"></div>
+<div><label>عنوان المشروع</label><input id="custAddress"></div>
+<div><label>قيمة المشروع</label><input type="number" step="0.01" id="custValue"></div>
+</div>
 <button onclick="addCustomer()">حفظ العميل</button>
 </div>
 <div class="card" style="margin-top:16px"><h2>العملاء</h2><div id="customersTable"></div></div>
@@ -56,14 +76,14 @@ table{width:100%;border-collapse:collapse;background:white}th,td{padding:12px;bo
 <section id="receipt">
 <div class="card"><h2>سند قبض</h2>
 <div class="formgrid"><div><label>التاريخ</label><input type="date" id="rDate"></div><div><label>العميل</label><select id="rCustomer"></select></div><div><label>المبلغ</label><input type="number" step="0.01" id="rAmount"></div><div><label>طريقة الدفع</label><select id="rMethod"><option>نقدي</option><option>تحويل</option><option>شيك</option></select></div></div>
-<label>البيان</label><textarea id="rNote"></textarea><button onclick="addReceipt()">حفظ سند القبض</button>
+<label>البيان</label><textarea id="rNote"></textarea><button onclick="addReceipt()">حفظ سند القبض</button><button class="printbtn" onclick="printReceipts()">طباعة سند القبض</button>
 </div><div class="card" style="margin-top:16px"><div id="receiptsTable"></div></div>
 </section>
 
 <section id="payment">
 <div class="card"><h2>سند صرف</h2>
 <div class="formgrid"><div><label>التاريخ</label><input type="date" id="pDate"></div><div><label>المستفيد</label><input id="pBeneficiary"></div><div><label>المبلغ</label><input type="number" step="0.01" id="pAmount"></div><div><label>طريقة الدفع</label><select id="pMethod"><option>نقدي</option><option>تحويل</option><option>شيك</option></select></div></div>
-<label>البيان</label><textarea id="pNote"></textarea><button onclick="addPayment()">حفظ سند الصرف</button>
+<label>البيان</label><textarea id="pNote"></textarea><button onclick="addPayment()">حفظ سند الصرف</button><button class="printbtn" onclick="printPayments()">طباعة سند الصرف</button>
 </div><div class="card" style="margin-top:16px"><div id="paymentsTable"></div></div>
 </section>
 
@@ -74,30 +94,70 @@ table{width:100%;border-collapse:collapse;background:white}th,td{padding:12px;bo
 </div><div class="card" style="margin-top:16px"><div id="employeesTable"></div></div>
 </section>
 
+<section id="company">
+<div class="card"><h2>تفاصيل الشركة</h2>
+<div class="formgrid">
+<div><label>اسم الشركة</label><input id="companyName"></div>
+</div>
+<button onclick="saveCompany()">حفظ بيانات الشركة</button>
+</div>
+</section>
 <section id="salaries">
 <div class="card"><h2>الرواتب</h2>
 <div class="formgrid"><div><label>الموظف</label><select id="sEmp"></select></div><div><label>الشهر</label><input type="month" id="sMonth"></div><div><label>البدلات</label><input type="number" step="0.01" id="sAllow"></div><div><label>الخصومات</label><input type="number" step="0.01" id="sDeduct"></div></div>
-<button onclick="addSalary()">حفظ الراتب</button>
+<button onclick="addSalary()">حفظ الراتب</button><button class="printbtn" onclick="printSalaries()">طباعة كشف الرواتب</button>
 </div><div class="card" style="margin-top:16px"><div id="salariesTable"></div></div>
 </section>
 </div>
 <script>
 const key='mahaseba_v1';
-let db=JSON.parse(localStorage.getItem(key)||'{"customers":[],"receipts":[],"payments":[],"employees":[],"salaries":[]}');
+let db=JSON.parse(localStorage.getItem(key)||'{"customers":[],"receipts":[],"payments":[],"employees":[],"salaries":[],"companyName":""}');
 function save(){localStorage.setItem(key,JSON.stringify(db));render();}
 function show(id){document.querySelectorAll('section').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');render();}
 function val(id){return document.getElementById(id).value.trim()}
 function money(n){return Number(n||0).toFixed(2)}
-function addCustomer(){if(!val('custName'))return alert('أدخل اسم العميل');db.customers.push({id:Date.now(),name:val('custName'),phone:val('custPhone')});document.getElementById('custName').value='';document.getElementById('custPhone').value='';save()}
+function nextCustomerNo(){return db.customers.length?Math.max(...db.customers.map(x=>Number(x.no)||0))+1:1}
+function addCustomer(){
+if(!val('custName'))return alert('أدخل اسم العميل');
+let no=nextCustomerNo();
+db.customers.push({id:Date.now(),no,name:val('custName'),phone:val('custPhone'),project:val('custProject'),address:val('custAddress'),value:+val('custValue')||0});
+['custName','custPhone','custProject','custAddress','custValue'].forEach(id=>document.getElementById(id).value='');
+save()
+}
 function addReceipt(){let a=+val('rAmount');if(!a)return alert('أدخل المبلغ');db.receipts.push({no:db.receipts.length+1,date:val('rDate'),customer:document.getElementById('rCustomer').selectedOptions[0]?.text||'',amount:a,method:val('rMethod'),note:val('rNote')});save()}
 function addPayment(){let a=+val('pAmount');if(!val('pBeneficiary')||!a)return alert('أدخل المستفيد والمبلغ');db.payments.push({no:db.payments.length+1,date:val('pDate'),beneficiary:val('pBeneficiary'),amount:a,method:val('pMethod'),note:val('pNote')});save()}
 function addEmployee(){if(!val('empName'))return alert('أدخل اسم الموظف');db.employees.push({id:Date.now(),name:val('empName'),no:val('empNo'),job:val('empJob'),salary:+val('empSalary')||0});save()}
 function addSalary(){let e=document.getElementById('sEmp').selectedOptions[0];if(!e)return;let emp=db.employees.find(x=>x.id==e.value),allow=+val('sAllow')||0,deduct=+val('sDeduct')||0;db.salaries.push({employee:emp.name,month:val('sMonth'),basic:emp.salary,allow,deduct,net:emp.salary+allow-deduct});save()}
+function login(){
+if(val('loginUser')==='admin' && document.getElementById('loginPass').value==='1234'){
+document.getElementById('login').style.display='none';
+}else alert('اسم المستخدم أو كلمة المرور غير صحيحة');
+}
+function saveCompany(){db.companyName=val('companyName');save();alert('تم حفظ بيانات الشركة')}
+function printDoc(title,html){
+let w=window.open('','_blank');
+w.document.write('<html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>'+title+'</title><style>body{font-family:Tahoma,Arial;padding:35px}h1{text-align:center}table{width:100%;border-collapse:collapse;margin-top:20px}td,th{border:1px solid #777;padding:10px;text-align:right}.head{text-align:center;margin-bottom:30px}</style></head><body>'+html+'</body></html>');
+w.document.close();w.focus();setTimeout(()=>w.print(),300);
+}
+function printReceipts(){
+let x=db.receipts[db.receipts.length-1];if(!x)return alert('لا يوجد سند قبض');
+printDoc('سند قبض','<div class="head"><h1>'+ (db.companyName||'الشركة') +'</h1><h2>سند قبض رقم '+x.no+'</h2></div><table><tr><th>التاريخ</th><td>'+x.date+'</td></tr><tr><th>العميل</th><td>'+x.customer+'</td></tr><tr><th>المبلغ</th><td>'+money(x.amount)+'</td></tr><tr><th>طريقة الدفع</th><td>'+x.method+'</td></tr><tr><th>البيان</th><td>'+x.note+'</td></tr></table>');
+}
+function printPayments(){
+let x=db.payments[db.payments.length-1];if(!x)return alert('لا يوجد سند صرف');
+printDoc('سند صرف','<div class="head"><h1>'+ (db.companyName||'الشركة') +'</h1><h2>سند صرف رقم '+x.no+'</h2></div><table><tr><th>التاريخ</th><td>'+x.date+'</td></tr><tr><th>المستفيد</th><td>'+x.beneficiary+'</td></tr><tr><th>المبلغ</th><td>'+money(x.amount)+'</td></tr><tr><th>طريقة الدفع</th><td>'+x.method+'</td></tr><tr><th>البيان</th><td>'+x.note+'</td></tr></table>');
+}
+function printSalaries(){
+if(!db.salaries.length)return alert('لا توجد رواتب');
+let rows=db.salaries.map(x=>'<tr><td>'+x.employee+'</td><td>'+x.month+'</td><td>'+money(x.basic)+'</td><td>'+money(x.allow)+'</td><td>'+money(x.deduct)+'</td><td>'+money(x.net)+'</td></tr>').join('');
+printDoc('كشف الرواتب','<div class="head"><h1>'+ (db.companyName||'الشركة') +'</h1><h2>كشف رواتب الموظفين</h2></div><table><tr><th>الموظف</th><th>الشهر</th><th>الأساسي</th><th>البدلات</th><th>الخصومات</th><th>الصافي</th></tr>'+rows+'</table>');
+}
 function render(){
+document.getElementById('companyName').value=db.companyName||'';
 cCount.textContent=db.customers.length;eCount.textContent=db.employees.length;rTotal.textContent=money(db.receipts.reduce((s,x)=>s+x.amount,0));pTotal.textContent=money(db.payments.reduce((s,x)=>s+x.amount,0));
 rCustomer.innerHTML=db.customers.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
 sEmp.innerHTML=db.employees.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
-customersTable.innerHTML=db.customers.length?`<table><tr><th>#</th><th>الاسم</th><th>الهاتف</th></tr>${db.customers.map((x,i)=>`<tr><td>${i+1}</td><td>${x.name}</td><td>${x.phone}</td></tr>`).join('')}</table>`:'<div class="empty">لا يوجد عملاء</div>';
+customersTable.innerHTML=db.customers.length?`<table><tr><th>رقم العميل</th><th>اسم العميل</th><th>رقم الهاتف</th><th>اسم المشروع</th><th>عنوان المشروع</th><th>قيمة المشروع</th></tr>${db.customers.map(x=>`<tr><td>${x.no}</td><td>${x.name}</td><td>${x.phone}</td><td>${x.project||''}</td><td>${x.address||''}</td><td>${money(x.value)}</td></tr>`).join('')}</table>`:'<div class="empty">لا يوجد عملاء</div>';
 receiptsTable.innerHTML=db.receipts.length?`<table><tr><th>السند</th><th>التاريخ</th><th>العميل</th><th>المبلغ</th><th>الدفع</th></tr>${db.receipts.map(x=>`<tr><td>${x.no}</td><td>${x.date}</td><td>${x.customer}</td><td>${money(x.amount)}</td><td>${x.method}</td></tr>`).join('')}</table>`:'<div class="empty">لا توجد سندات قبض</div>';
 paymentsTable.innerHTML=db.payments.length?`<table><tr><th>السند</th><th>التاريخ</th><th>المستفيد</th><th>المبلغ</th><th>الدفع</th></tr>${db.payments.map(x=>`<tr><td>${x.no}</td><td>${x.date}</td><td>${x.beneficiary}</td><td>${money(x.amount)}</td><td>${x.method}</td></tr>`).join('')}</table>`:'<div class="empty">لا توجد سندات صرف</div>';
 employeesTable.innerHTML=db.employees.length?`<table><tr><th>الرقم</th><th>الموظف</th><th>الوظيفة</th><th>الراتب</th></tr>${db.employees.map(x=>`<tr><td>${x.no}</td><td>${x.name}</td><td>${x.job}</td><td>${money(x.salary)}</td></tr>`).join('')}</table>`:'<div class="empty">لا يوجد موظفون</div>';
