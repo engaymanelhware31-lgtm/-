@@ -52,6 +52,9 @@ table{width:100%;border-collapse:collapse;background:white}th,td{padding:12px;bo
 <div class="card" style="margin-bottom:16px;text-align:center"><h2 id="homeCompanyName">اسم الشركة</h2></div>
 <div class="notice">هذه النسخة تعمل مباشرة من الجهاز، والبيانات تُحفظ محليًا داخل المتصفح.</div>
 <div class="grid">
+<div class="card"><h2>إجمالي المشاريع</h2><div class="num" id="projectTotal">0.00</div></div>
+<div class="card"><h2>إجمالي المدفوع</h2><div class="num" id="paidTotal">0.00</div></div>
+<div class="card"><h2>إجمالي المتبقي</h2><div class="num" id="remainingTotal">0.00</div></div>
 <div class="card"><h2>العملاء</h2><div class="num" id="cCount">0</div></div>
 <div class="card"><h2>الموظفين</h2><div class="num" id="eCount">0</div></div>
 <div class="card"><h2>إجمالي سندات القبض</h2><div class="num" id="rTotal">0.00</div></div>
@@ -173,7 +176,10 @@ let x=db.receipts[db.receipts.length-1];if(!x)return alert('لا يوجد سند
 printDoc('سند قبض',documentHeader('سند قبض',x.no,x.date)+
 `<table><tr><th>البيان</th><th>التفاصيل</th></tr>
 <tr><td>العميل</td><td>${x.customer}</td></tr>
-<tr><td>المبلغ</td><td class="amount">${money(x.amount)}</td></tr>
+<tr><td>إجمالي قيمة المشروع</td><td>${money((db.customers.find(c=>c.name===x.customer)||{}).value)}</td></tr>
+<tr><td>إجمالي المدفوع</td><td>${money(db.receipts.filter(r=>r.customer===x.customer).reduce((a,r)=>a+Number(r.amount||0),0))}</td></tr>
+<tr><td>المبلغ المتبقي</td><td>${money(Math.max(0,(db.customers.find(c=>c.name===x.customer)||{}).value-db.receipts.filter(r=>r.customer===x.customer).reduce((a,r)=>a+Number(r.amount||0),0)))}</td></tr>
+<tr><td>مبلغ سند القبض الحالي</td><td class="amount">${money(x.amount)}</td></tr>
 <tr><td>طريقة الدفع</td><td>${x.method}</td></tr>
 <tr><td>البيان</td><td class="notes">${x.note||''}</td></tr></table>
 <div class="sign"><div>المستلم</div><div>المحاسب</div></div><div class="footer">تم إصدار هذا السند بواسطة برنامج محاسبه</div>`);
@@ -195,6 +201,7 @@ printDoc('كشف الرواتب',documentHeader('كشف رواتب الموظف�
 `<table><tr><th>الموظف</th><th>الشهر</th><th>الأساسي</th><th>البدلات</th><th>الخصومات</th><th>الصافي</th></tr>${rows}</table>
 <div class="sign"><div>الموظف</div><div>المحاسب</div></div><div class="footer">تم إصدار كشف الرواتب بواسطة برنامج محاسبه</div>`);
 }
+
 function reportCustomers(){
 let rows=db.customers.map(x=>`<tr><td>${x.no}</td><td>${x.name}</td><td>${x.phone}</td><td>${x.project||''}</td><td>${x.address||''}</td><td>${money(x.value)}</td></tr>`).join('');
 printDoc('تقرير العملاء',documentHeader('تقرير العملاء','—')+`<table><tr><th>رقم العميل</th><th>اسم العميل</th><th>الهاتف</th><th>المشروع</th><th>العنوان</th><th>قيمة المشروع</th></tr>${rows}</table>`);
@@ -218,6 +225,13 @@ printDoc('تقرير الرواتب',documentHeader('تقرير الرواتب',
 function render(){
 document.getElementById('companyName').value=db.companyName||'';
 document.getElementById('homeCompanyName').textContent=db.companyName||'اسم الشركة';
+document.getElementById('homeCompanyName').textContent=db.companyName||'اسم الشركة';
+let projectTotal=db.customers.reduce((a,x)=>a+(Number(x.value)||0),0);
+let paidTotal=db.receipts.reduce((a,x)=>a+(Number(x.amount)||0),0);
+let remainingTotal=Math.max(0,projectTotal-paidTotal);
+document.getElementById('projectTotal').textContent=money(projectTotal);
+document.getElementById('paidTotal').textContent=money(paidTotal);
+document.getElementById('remainingTotal').textContent=money(remainingTotal);
 cCount.textContent=db.customers.length;eCount.textContent=db.employees.length;rTotal.textContent=money(db.receipts.reduce((s,x)=>s+x.amount,0));pTotal.textContent=money(db.payments.reduce((s,x)=>s+x.amount,0));
 rCustomer.innerHTML=db.customers.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
 sEmp.innerHTML=db.employees.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
