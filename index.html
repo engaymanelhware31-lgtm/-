@@ -74,7 +74,9 @@ table{width:100%;border-collapse:collapse;background:white}th,td{padding:12px;bo
 <div><label>عنوان المشروع</label><input id="custAddress"></div>
 <div><label>قيمة المشروع</label><input type="number" step="0.01" id="custValue"></div>
 </div>
-<button onclick="addCustomer()">حفظ العميل</button><button class="printbtn" onclick="reportCustomers()">تقرير العملاء</button>
+<input type="hidden" id="customerEditId">
+<button id="customerSaveBtn" onclick="saveCustomerForm()">حفظ العميل</button>
+<button id="customerCancelBtn" class="secondary" onclick="cancelCustomerEdit()" style="display:none">إلغاء</button><button class="printbtn" onclick="reportCustomers()">تقرير العملاء</button>
 </div>
 <div class="card" style="margin-top:16px"><h2>العملاء</h2><div id="customersTable"></div></div>
 </section>
@@ -96,7 +98,9 @@ table{width:100%;border-collapse:collapse;background:white}th,td{padding:12px;bo
 <section id="employees">
 <div class="card"><h2>إضافة موظف</h2>
 <div class="formgrid"><div><label>اسم الموظف</label><input id="empName"></div><div><label>الرقم الوظيفي</label><input id="empNo"></div><div><label>الوظيفة</label><input id="empJob"></div><div><label>الراتب الأساسي</label><input type="number" step="0.01" id="empSalary"></div></div>
-<button onclick="addEmployee()">حفظ الموظف</button><button class="printbtn" onclick="reportEmployees()">تقرير الموظفين</button>
+<input type="hidden" id="employeeEditId">
+<button id="employeeSaveBtn" onclick="saveEmployeeForm()">حفظ الموظف</button>
+<button id="employeeCancelBtn" class="secondary" onclick="cancelEmployeeEdit()" style="display:none">إلغاء</button><button class="printbtn" onclick="reportEmployees()">تقرير الموظفين</button>
 </div><div class="card" style="margin-top:16px"><div id="employeesTable"></div></div>
 </section>
 
@@ -205,22 +209,58 @@ printDoc('كشف الرواتب',documentHeader('كشف رواتب الموظف�
 }
 
 
+function saveCustomerForm(){
+let id=val('customerEditId');
+if(id){
+let x=db.customers.find(c=>c.id==id);if(!x)return;
+x.name=val('custName');x.phone=val('custPhone');x.project=val('custProject');x.address=val('custAddress');x.value=+val('custValue')||0;
+cancelCustomerEdit(false);save();
+}else addCustomer();
+}
+function cancelCustomerEdit(clear=true){
+document.getElementById('customerEditId').value='';
+document.getElementById('customerSaveBtn').textContent='حفظ العميل';
+document.getElementById('customerCancelBtn').style.display='none';
+document.getElementById('custNo').value=nextCustomerNo();
+if(clear)['custName','custPhone','custProject','custAddress','custValue'].forEach(id=>document.getElementById(id).value='');
+}
+function saveEmployeeForm(){
+let id=val('employeeEditId');
+if(id){
+let x=db.employees.find(e=>e.id==id);if(!x)return;
+x.name=val('empName');x.no=val('empNo');x.job=val('empJob');x.salary=+val('empSalary')||0;
+cancelEmployeeEdit(false);save();
+}else addEmployee();
+}
+function cancelEmployeeEdit(clear=true){
+document.getElementById('employeeEditId').value='';
+document.getElementById('employeeSaveBtn').textContent='حفظ الموظف';
+document.getElementById('employeeCancelBtn').style.display='none';
+if(clear)['empName','empNo','empJob','empSalary'].forEach(id=>document.getElementById(id).value='');
+}
 function editCustomer(id){
 let x=db.customers.find(c=>c.id==id);if(!x)return;
-let name=prompt('اسم العميل',x.name);if(name===null)return;
-let phone=prompt('رقم الهاتف',x.phone||'');if(phone===null)return;
-let project=prompt('اسم المشروع',x.project||'');if(project===null)return;
-let address=prompt('عنوان المشروع',x.address||'');if(address===null)return;
-let value=prompt('قيمة المشروع',x.value||0);if(value===null)return;
-x.name=name.trim();x.phone=phone.trim();x.project=project.trim();x.address=address.trim();x.value=Number(value)||0;save();
+document.getElementById('custNo').value=x.no;
+document.getElementById('custName').value=x.name||'';
+document.getElementById('custPhone').value=x.phone||'';
+document.getElementById('custProject').value=x.project||'';
+document.getElementById('custAddress').value=x.address||'';
+document.getElementById('custValue').value=x.value||0;
+document.getElementById('customerEditId').value=id;
+document.getElementById('customerSaveBtn').textContent='حفظ التعديل';
+document.getElementById('customerCancelBtn').style.display='inline-block';
+show('customers');
 }
 function editEmployee(id){
 let x=db.employees.find(e=>e.id==id);if(!x)return;
-let name=prompt('اسم الموظف',x.name);if(name===null)return;
-let no=prompt('الرقم الوظيفي',x.no||'');if(no===null)return;
-let job=prompt('الوظيفة',x.job||'');if(job===null)return;
-let salary=prompt('الراتب الأساسي',x.salary||0);if(salary===null)return;
-x.name=name.trim();x.no=no.trim();x.job=job.trim();x.salary=Number(salary)||0;save();
+document.getElementById('empName').value=x.name||'';
+document.getElementById('empNo').value=x.no||'';
+document.getElementById('empJob').value=x.job||'';
+document.getElementById('empSalary').value=x.salary||0;
+document.getElementById('employeeEditId').value=id;
+document.getElementById('employeeSaveBtn').textContent='حفظ التعديل';
+document.getElementById('employeeCancelBtn').style.display='inline-block';
+show('employees');
 }
 function changePassword(){
 let current=prompt('كلمة المرور الحالية');if(current===null)return;
