@@ -49,6 +49,7 @@ table{width:100%;border-collapse:collapse;background:white}th,td{padding:12px;bo
 </nav>
 
 <section id="home" class="active">
+<div class="card" style="margin-bottom:16px;text-align:center"><h2 id="homeCompanyName">اسم الشركة</h2></div>
 <div class="notice">هذه النسخة تعمل مباشرة من الجهاز، والبيانات تُحفظ محليًا داخل المتصفح.</div>
 <div class="grid">
 <div class="card"><h2>العملاء</h2><div class="num" id="cCount">0</div></div>
@@ -136,24 +137,54 @@ document.getElementById('login').style.display='none';
 function saveCompany(){db.companyName=val('companyName');save();alert('تم حفظ بيانات الشركة')}
 function printDoc(title,html){
 let w=window.open('','_blank');
-w.document.write('<html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>'+title+'</title><style>body{font-family:Tahoma,Arial;padding:35px}h1{text-align:center}table{width:100%;border-collapse:collapse;margin-top:20px}td,th{border:1px solid #777;padding:10px;text-align:right}.head{text-align:center;margin-bottom:30px}</style></head><body>'+html+'</body></html>');
+w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${title}</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f2f4f7;font-family:Tahoma,Arial,sans-serif;color:#172033}
+.sheet{width:210mm;min-height:297mm;margin:20px auto;background:#fff;padding:18mm;box-shadow:0 2px 12px #0002}
+.top{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #132238;padding-bottom:16px;margin-bottom:24px}
+.company{font-size:22px;font-weight:700;color:#132238}.type{text-align:left;font-size:26px;font-weight:700;color:#132238}
+.meta{display:flex;justify-content:space-between;background:#f6f7f9;border:1px solid #e1e5ea;border-radius:8px;padding:12px 16px;margin-bottom:22px}
+table{width:100%;border-collapse:collapse;margin-top:12px}th{background:#132238;color:#fff;padding:13px;text-align:right}td{border:1px solid #dfe3e8;padding:13px}
+.amount{font-size:22px;font-weight:700}.notes{min-height:80px}.sign{display:grid;grid-template-columns:1fr 1fr;gap:50px;margin-top:80px;text-align:center}.sign div{border-top:1px solid #777;padding-top:10px}
+.footer{margin-top:40px;padding-top:10px;border-top:1px solid #ddd;text-align:center;font-size:11px;color:#777}
+@media print{body{background:#fff}.sheet{margin:0;box-shadow:none;width:auto;min-height:auto}button{display:none}}
+</style></head><body><div class="sheet">${html}</div></body></html>`);
 w.document.close();w.focus();setTimeout(()=>w.print(),300);
+}
+function documentHeader(type,no){
+return `<div class="top"><div class="company">${db.companyName||'اسم الشركة'}</div><div class="type">${type}</div></div>
+<div class="meta"><span><b>رقم السند:</b> ${no}</span><span><b>التاريخ:</b> ${new Date().toLocaleDateString('ar-KW')}</span></div>`;
 }
 function printReceipts(){
 let x=db.receipts[db.receipts.length-1];if(!x)return alert('لا يوجد سند قبض');
-printDoc('سند قبض','<div class="head"><h1>'+ (db.companyName||'الشركة') +'</h1><h2>سند قبض رقم '+x.no+'</h2></div><table><tr><th>التاريخ</th><td>'+x.date+'</td></tr><tr><th>العميل</th><td>'+x.customer+'</td></tr><tr><th>المبلغ</th><td>'+money(x.amount)+'</td></tr><tr><th>طريقة الدفع</th><td>'+x.method+'</td></tr><tr><th>البيان</th><td>'+x.note+'</td></tr></table>');
+printDoc('سند قبض',documentHeader('سند قبض',x.no)+
+`<table><tr><th>البيان</th><th>التفاصيل</th></tr>
+<tr><td>العميل</td><td>${x.customer}</td></tr>
+<tr><td>المبلغ</td><td class="amount">${money(x.amount)}</td></tr>
+<tr><td>طريقة الدفع</td><td>${x.method}</td></tr>
+<tr><td>البيان</td><td class="notes">${x.note||''}</td></tr></table>
+<div class="sign"><div>المستلم</div><div>المحاسب</div></div><div class="footer">تم إصدار هذا السند بواسطة برنامج محاسبه</div>`);
 }
 function printPayments(){
 let x=db.payments[db.payments.length-1];if(!x)return alert('لا يوجد سند صرف');
-printDoc('سند صرف','<div class="head"><h1>'+ (db.companyName||'الشركة') +'</h1><h2>سند صرف رقم '+x.no+'</h2></div><table><tr><th>التاريخ</th><td>'+x.date+'</td></tr><tr><th>المستفيد</th><td>'+x.beneficiary+'</td></tr><tr><th>المبلغ</th><td>'+money(x.amount)+'</td></tr><tr><th>طريقة الدفع</th><td>'+x.method+'</td></tr><tr><th>البيان</th><td>'+x.note+'</td></tr></table>');
+printDoc('سند صرف',documentHeader('سند صرف',x.no)+
+`<table><tr><th>البيان</th><th>التفاصيل</th></tr>
+<tr><td>المستفيد</td><td>${x.beneficiary}</td></tr>
+<tr><td>المبلغ</td><td class="amount">${money(x.amount)}</td></tr>
+<tr><td>طريقة الدفع</td><td>${x.method}</td></tr>
+<tr><td>البيان</td><td class="notes">${x.note||''}</td></tr></table>
+<div class="sign"><div>المستفيد</div><div>المحاسب</div></div><div class="footer">تم إصدار هذا السند بواسطة برنامج محاسبه</div>`);
 }
 function printSalaries(){
 if(!db.salaries.length)return alert('لا توجد رواتب');
-let rows=db.salaries.map(x=>'<tr><td>'+x.employee+'</td><td>'+x.month+'</td><td>'+money(x.basic)+'</td><td>'+money(x.allow)+'</td><td>'+money(x.deduct)+'</td><td>'+money(x.net)+'</td></tr>').join('');
-printDoc('كشف الرواتب','<div class="head"><h1>'+ (db.companyName||'الشركة') +'</h1><h2>كشف رواتب الموظفين</h2></div><table><tr><th>الموظف</th><th>الشهر</th><th>الأساسي</th><th>البدلات</th><th>الخصومات</th><th>الصافي</th></tr>'+rows+'</table>');
+let rows=db.salaries.map(x=>`<tr><td>${x.employee}</td><td>${x.month}</td><td>${money(x.basic)}</td><td>${money(x.allow)}</td><td>${money(x.deduct)}</td><td class="amount">${money(x.net)}</td></tr>`).join('');
+printDoc('كشف الرواتب',documentHeader('كشف رواتب الموظفين','—')+
+`<table><tr><th>الموظف</th><th>الشهر</th><th>الأساسي</th><th>البدلات</th><th>الخصومات</th><th>الصافي</th></tr>${rows}</table>
+<div class="sign"><div>الموظف</div><div>المحاسب</div></div><div class="footer">تم إصدار كشف الرواتب بواسطة برنامج محاسبه</div>`);
 }
 function render(){
 document.getElementById('companyName').value=db.companyName||'';
+document.getElementById('homeCompanyName').textContent=db.companyName||'اسم الشركة';
 cCount.textContent=db.customers.length;eCount.textContent=db.employees.length;rTotal.textContent=money(db.receipts.reduce((s,x)=>s+x.amount,0));pTotal.textContent=money(db.payments.reduce((s,x)=>s+x.amount,0));
 rCustomer.innerHTML=db.customers.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
 sEmp.innerHTML=db.employees.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
