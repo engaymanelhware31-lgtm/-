@@ -281,91 +281,78 @@ function reportCustomerStatements(){
     return;
   }
 
-  const esc = v => String(v ?? '').replace(/[&<>"']/g, s => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
-  }[s]));
+  let old=document.getElementById('customerStatementSelector');
+  if(old) old.remove();
 
-  const money = v => Number(v || 0).toLocaleString('ar-KW',{
-    minimumFractionDigits:2, maximumFractionDigits:2
-  });
-
-  const options = db.customers.map(c =>
-    `<option value="${esc(c.id)}">${esc(c.name)}${c.no ? ' - رقم العميل '+esc(c.no) : ''}</option>`
+  const options=db.customers.map(c =>
+    `<option value="${String(c.id).replace(/"/g,'&quot;')}">${String(c.name||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}${c.no ? ' - رقم العميل '+c.no : ''}</option>`
   ).join('');
 
-  const selector = window.open('','_blank');
-  selector.document.write(`<!doctype html><html lang="ar" dir="rtl"><head>
-    <meta charset="UTF-8"><title>اختيار العميل - كشف حساب</title>
-    <style>
-      *{box-sizing:border-box}
-      body{font-family:Arial,Tahoma,sans-serif;background:#f5f7fa;margin:0;padding:40px;color:#222}
-      .box{max-width:650px;margin:50px auto;background:#fff;padding:30px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.08)}
-      h1{text-align:center;color:#123b66;margin-top:0}
-      label{display:block;font-weight:bold;margin:25px 0 8px}
-      select{width:100%;padding:14px;border:1px solid #ccc;border-radius:7px;font-size:16px;background:#fff}
-      button{width:100%;margin-top:20px;padding:14px;border:0;border-radius:7px;background:#123b66;color:#fff;font-size:17px;cursor:pointer}
-    </style></head><body>
-    <div class="box">
-      <h1>${esc(db.companyName||'محاسبه')}</h1>
-      <h2 style="text-align:center">كشف حساب عميل</h2>
-      <label>اختر العميل</label>
-      <select id="customerSelect">${options}</select>
-      <button id="openStatement">عرض كشف الحساب</button>
-    </div>
-    <script>
-      const customers=${JSON.stringify(db.customers)};
-      const receipts=${JSON.stringify(db.receipts||[])};
-      const companyName=${JSON.stringify(db.companyName||'محاسبه')};
-      const esc=v=>String(v??'').replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[s]));
-      const money=v=>Number(v||0).toLocaleString('ar-KW',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const modal=document.createElement('div');
+  modal.id='customerStatementSelector';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px;';
+  modal.innerHTML=`
+    <div style="background:#fff;width:min(520px,100%);padding:28px;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.25);direction:rtl;">
+      <h2 style="margin:0 0 20px;text-align:center;">كشف حساب عميل</h2>
+      <label style="display:block;font-weight:bold;margin-bottom:8px;">اختر العميل</label>
+      <select id="statementCustomerSelect" style="width:100%;padding:13px;font-size:16px;border:1px solid #bbb;border-radius:7px;background:#fff;">
+        ${options}
+      </select>
+      <div style="display:flex;gap:10px;margin-top:20px;">
+        <button onclick="openSelectedCustomerStatement()" style="flex:1;padding:13px;border:0;border-radius:7px;background:#123b66;color:#fff;font-size:16px;cursor:pointer;">عرض كشف الحساب</button>
+        <button onclick="document.getElementById('customerStatementSelector').remove()" style="padding:13px 20px;border:1px solid #bbb;border-radius:7px;background:#fff;font-size:16px;cursor:pointer;">إلغاء</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
 
-      document.getElementById('openStatement').onclick=()=>{
-        const id=document.getElementById('customerSelect').value;
-        const c=customers.find(x=>String(x.id)===String(id));
-        if(!c){alert('يرجى اختيار العميل');return;}
+function openSelectedCustomerStatement(){
+  const select=document.getElementById('statementCustomerSelect');
+  if(!select) return;
+  const customer=db.customers.find(c=>String(c.id)===String(select.value));
+  if(!customer){ alert('يرجى اختيار العميل'); return; }
 
-        const paid=receipts.filter(r=>String(r.customer||'').trim()===String(c.name||'').trim())
-          .reduce((sum,r)=>sum+Number(r.amount||0),0);
-        const value=Number(c.value||0);
-        const remaining=value-paid;
+  const esc=v=>String(v??'').replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[s]));
+  const money=v=>Number(v||0).toLocaleString('ar-KW',{minimumFractionDigits:2,maximumFractionDigits:2});
 
-        const w=window.open('','_blank');
-        w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head>
-          <meta charset="UTF-8"><title>كشف حساب - ${esc(c.name)}</title>
-          <style>
-            *{box-sizing:border-box}body{font-family:Arial,Tahoma,sans-serif;margin:0;padding:30px;color:#222}
-            .print-bar{text-align:center;margin-bottom:20px}.print-btn{background:#123b66;color:#fff;border:0;padding:12px 28px;border-radius:7px;font-size:16px;cursor:pointer}
-            .report-title{text-align:center;margin:0 0 25px;font-size:26px;color:#123b66}
-            .statement-card{border:1px solid #ccc;border-radius:10px;padding:25px;max-width:850px;margin:auto}
-            .statement-head{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #123b66;padding-bottom:12px;margin-bottom:18px}
-            .statement-head h2{margin:0;color:#123b66}.statement-info{width:100%;border-collapse:collapse}
-            .statement-info th,.statement-info td{border:1px solid #ddd;padding:12px;text-align:right}
-            .statement-info th{width:30%;background:#f3f5f7}.statement-footer{display:flex;justify-content:space-between;gap:12px;margin-top:20px;padding:15px;background:#f5f7fa;border-radius:7px}
-            @media print{body{padding:0}.print-bar{display:none}.statement-card{border:1px solid #aaa}}
-          </style></head><body>
-          <div class="print-bar"><button class="print-btn" onclick="window.print()">طباعة كشف الحساب</button></div>
-          <h1 class="report-title">${esc(companyName)} - كشف حساب عميل</h1>
-          <section class="statement-card">
-            <div class="statement-head"><h2>${esc(c.name)}</h2><div>رقم العميل: ${esc(c.no)}</div></div>
-            <table class="statement-info">
-              <tr><th>اسم العميل</th><td>${esc(c.name)}</td></tr>
-              <tr><th>رقم الهاتف</th><td>${esc(c.phone)}</td></tr>
-              <tr><th>اسم المشروع</th><td>${esc(c.project)}</td></tr>
-              <tr><th>عنوان المشروع</th><td>${esc(c.address)}</td></tr>
-              <tr><th>قيمة المشروع</th><td>${money(value)}</td></tr>
-              <tr><th>المدفوع</th><td>${money(paid)}</td></tr>
-              <tr><th>المتبقي</th><td>${money(remaining)}</td></tr>
-            </table>
-            <div class="statement-footer">
-              <span>قيمة المشروع: <strong>${money(value)}</strong></span>
-              <span>المدفوع: <strong>${money(paid)}</strong></span>
-              <span>المتبقي: <strong>${money(remaining)}</strong></span>
-            </div>
-          </section></body></html>`);
-        w.document.close();
-      };
-    <\/script></body></html>`);
-  selector.document.close();
+  const paid=(db.receipts||[])
+    .filter(r=>String(r.customer||'').trim()===String(customer.name||'').trim())
+    .reduce((sum,r)=>sum+Number(r.amount||0),0);
+  const value=Number(customer.value||0);
+  const remaining=value-paid;
+
+  const w=window.open('','_blank');
+  if(!w){alert('يرجى السماح بفتح النوافذ المنبثقة للبرنامج.');return;}
+  w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
+  <title>كشف حساب - ${esc(customer.name)}</title>
+  <style>
+  *{box-sizing:border-box}body{font-family:Arial,Tahoma,sans-serif;margin:0;padding:30px;color:#222}
+  .printbar{text-align:center;margin-bottom:20px}.printbtn{background:#123b66;color:#fff;border:0;padding:12px 28px;border-radius:7px;font-size:16px;cursor:pointer}
+  .title{text-align:center;color:#123b66;margin:0 0 25px}.card{max-width:850px;margin:auto;border:1px solid #ccc;border-radius:10px;padding:25px}
+  .head{display:flex;justify-content:space-between;border-bottom:2px solid #123b66;padding-bottom:12px;margin-bottom:18px}
+  table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:12px;text-align:right}th{width:30%;background:#f3f5f7}
+  .totals{display:flex;justify-content:space-between;margin-top:20px;padding:15px;background:#f5f7fa;border-radius:7px}
+  @media print{body{padding:0}.printbar{display:none}.card{border:1px solid #aaa}}
+  </style></head><body>
+  <div class="printbar"><button class="printbtn" onclick="window.print()">طباعة كشف الحساب</button></div>
+  <h1 class="title">${esc(db.companyName||'محاسبه')} - كشف حساب عميل</h1>
+  <div class="card">
+    <div class="head"><h2>${esc(customer.name)}</h2><div>رقم العميل: ${esc(customer.no)}</div></div>
+    <table>
+      <tr><th>اسم العميل</th><td>${esc(customer.name)}</td></tr>
+      <tr><th>رقم الهاتف</th><td>${esc(customer.phone)}</td></tr>
+      <tr><th>اسم المشروع</th><td>${esc(customer.project)}</td></tr>
+      <tr><th>عنوان المشروع</th><td>${esc(customer.address)}</td></tr>
+      <tr><th>قيمة المشروع</th><td>${money(value)}</td></tr>
+      <tr><th>المدفوع</th><td>${money(paid)}</td></tr>
+      <tr><th>المتبقي</th><td>${money(remaining)}</td></tr>
+    </table>
+    <div class="totals"><span>قيمة المشروع: <b>${money(value)}</b></span><span>المدفوع: <b>${money(paid)}</b></span><span>المتبقي: <b>${money(remaining)}</b></span></div>
+  </div></body></html>`);
+  w.document.close();
+
+  const modal=document.getElementById('customerStatementSelector');
+  if(modal) modal.remove();
 }
 function reportCustomers(){
 let rows=db.customers.map(x=>`<tr><td>${x.no}</td><td>${x.name}</td><td>${x.phone}</td><td>${x.project||''}</td><td>${x.address||''}</td><td>${money(x.value)}</td></tr>`).join('');
