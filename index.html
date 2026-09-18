@@ -45,6 +45,8 @@ table{width:100%;border-collapse:collapse;background:white}th,td{padding:12px;bo
 <button onclick="show('payment')">سند صرف</button>
 <button onclick="show('employees')">الموظفين</button>
 <button onclick="show('company')">تفاصيل الشركة</button>
+<button onclick="changePassword()">تغيير كلمة المرور</button>
+<button onclick="logout()">تسجيل خروج</button>
 <button onclick="show('salaries')">الرواتب</button>
 </nav>
 
@@ -134,7 +136,7 @@ function addPayment(){let a=+val('pAmount');if(!val('pBeneficiary')||!a)return a
 function addEmployee(){if(!val('empName'))return alert('أدخل اسم الموظف');db.employees.push({id:Date.now(),name:val('empName'),no:val('empNo'),job:val('empJob'),salary:+val('empSalary')||0});save()}
 function addSalary(){let e=document.getElementById('sEmp').selectedOptions[0];if(!e)return;let emp=db.employees.find(x=>x.id==e.value),allow=+val('sAllow')||0,deduct=+val('sDeduct')||0;db.salaries.push({employee:emp.name,month:val('sMonth'),basic:emp.salary,allow,deduct,net:emp.salary+allow-deduct});save()}
 function login(){
-if(val('loginUser')==='admin' && document.getElementById('loginPass').value==='1234'){
+if(val('loginUser')==='admin' && document.getElementById('loginPass').value===(localStorage.getItem('mahaseba_password')||'1234')){
 localStorage.setItem('mahaseba_logged_in','1');
 document.getElementById('login').style.display='none';
 }else alert('اسم المستخدم أو كلمة المرور غير صحيحة');
@@ -202,6 +204,36 @@ printDoc('كشف الرواتب',documentHeader('كشف رواتب الموظف�
 <div class="sign"><div>الموظف</div><div>المحاسب</div></div><div class="footer">تم إصدار كشف الرواتب بواسطة برنامج محاسبه</div>`);
 }
 
+
+function editCustomer(id){
+let x=db.customers.find(c=>c.id==id);if(!x)return;
+let name=prompt('اسم العميل',x.name);if(name===null)return;
+let phone=prompt('رقم الهاتف',x.phone||'');if(phone===null)return;
+let project=prompt('اسم المشروع',x.project||'');if(project===null)return;
+let address=prompt('عنوان المشروع',x.address||'');if(address===null)return;
+let value=prompt('قيمة المشروع',x.value||0);if(value===null)return;
+x.name=name.trim();x.phone=phone.trim();x.project=project.trim();x.address=address.trim();x.value=Number(value)||0;save();
+}
+function editEmployee(id){
+let x=db.employees.find(e=>e.id==id);if(!x)return;
+let name=prompt('اسم الموظف',x.name);if(name===null)return;
+let no=prompt('الرقم الوظيفي',x.no||'');if(no===null)return;
+let job=prompt('الوظيفة',x.job||'');if(job===null)return;
+let salary=prompt('الراتب الأساسي',x.salary||0);if(salary===null)return;
+x.name=name.trim();x.no=no.trim();x.job=job.trim();x.salary=Number(salary)||0;save();
+}
+function changePassword(){
+let current=prompt('كلمة المرور الحالية');if(current===null)return;
+if(current!==localStorage.getItem('mahaseba_password') && !(current==='1234' && !localStorage.getItem('mahaseba_password')))return alert('كلمة المرور الحالية غير صحيحة');
+let next=prompt('كلمة المرور الجديدة');if(next===null||!next)return alert('أدخل كلمة مرور جديدة');
+let confirmPass=prompt('تأكيد كلمة المرور الجديدة');if(confirmPass!==next)return alert('كلمتا المرور غير متطابقتين');
+localStorage.setItem('mahaseba_password',next);alert('تم تغيير كلمة المرور');
+}
+function logout(){
+localStorage.removeItem('mahaseba_logged_in');
+document.getElementById('login').style.display='flex';
+document.getElementById('loginPass').value='';
+}
 function reportCustomers(){
 let rows=db.customers.map(x=>`<tr><td>${x.no}</td><td>${x.name}</td><td>${x.phone}</td><td>${x.project||''}</td><td>${x.address||''}</td><td>${money(x.value)}</td></tr>`).join('');
 printDoc('تقرير العملاء',documentHeader('تقرير العملاء','—')+`<table><tr><th>رقم العميل</th><th>اسم العميل</th><th>الهاتف</th><th>المشروع</th><th>العنوان</th><th>قيمة المشروع</th></tr>${rows}</table>`);
@@ -235,10 +267,10 @@ document.getElementById('remainingTotal').textContent=money(remainingTotal);
 cCount.textContent=db.customers.length;eCount.textContent=db.employees.length;rTotal.textContent=money(db.receipts.reduce((s,x)=>s+x.amount,0));pTotal.textContent=money(db.payments.reduce((s,x)=>s+x.amount,0));
 rCustomer.innerHTML=db.customers.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
 sEmp.innerHTML=db.employees.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
-customersTable.innerHTML=db.customers.length?`<table><tr><th>رقم العميل</th><th>اسم العميل</th><th>رقم الهاتف</th><th>اسم المشروع</th><th>عنوان المشروع</th><th>قيمة المشروع</th></tr>${db.customers.map(x=>`<tr><td>${x.no}</td><td>${x.name}</td><td>${x.phone}</td><td>${x.project||''}</td><td>${x.address||''}</td><td>${money(x.value)}</td></tr>`).join('')}</table>`:'<div class="empty">لا يوجد عملاء</div>';
+customersTable.innerHTML=db.customers.length?`<table><tr><th>رقم العميل</th><th>اسم العميل</th><th>رقم الهاتف</th><th>اسم المشروع</th><th>عنوان المشروع</th><th>قيمة المشروع</th><th>تعديل</th></tr>${db.customers.map(x=>`<tr><td>${x.no}</td><td>${x.name}</td><td>${x.phone}</td><td>${x.project||''}</td><td>${x.address||''}</td><td>${money(x.value)}</td><td><button onclick="editCustomer(${x.id})">تعديل</button></td></tr>`).join('')}</table>`:'<div class="empty">لا يوجد عملاء</div>';
 receiptsTable.innerHTML=db.receipts.length?`<table><tr><th>السند</th><th>التاريخ</th><th>العميل</th><th>المبلغ</th><th>الدفع</th></tr>${db.receipts.map(x=>`<tr><td>${x.no}</td><td>${x.date}</td><td>${x.customer}</td><td>${money(x.amount)}</td><td>${x.method}</td></tr>`).join('')}</table>`:'<div class="empty">لا توجد سندات قبض</div>';
 paymentsTable.innerHTML=db.payments.length?`<table><tr><th>السند</th><th>التاريخ</th><th>المستفيد</th><th>المبلغ</th><th>الدفع</th></tr>${db.payments.map(x=>`<tr><td>${x.no}</td><td>${x.date}</td><td>${x.beneficiary}</td><td>${money(x.amount)}</td><td>${x.method}</td></tr>`).join('')}</table>`:'<div class="empty">لا توجد سندات صرف</div>';
-employeesTable.innerHTML=db.employees.length?`<table><tr><th>الرقم</th><th>الموظف</th><th>الوظيفة</th><th>الراتب</th></tr>${db.employees.map(x=>`<tr><td>${x.no}</td><td>${x.name}</td><td>${x.job}</td><td>${money(x.salary)}</td></tr>`).join('')}</table>`:'<div class="empty">لا يوجد موظفون</div>';
+employeesTable.innerHTML=db.employees.length?`<table><tr><th>الرقم</th><th>الموظف</th><th>الوظيفة</th><th>الراتب</th><th>تعديل</th></tr>${db.employees.map(x=>`<tr><td>${x.no}</td><td>${x.name}</td><td>${x.job}</td><td>${money(x.salary)}</td><td><button onclick="editEmployee(${x.id})">تعديل</button></td></tr>`).join('')}</table>`:'<div class="empty">لا يوجد موظفون</div>';
 salariesTable.innerHTML=db.salaries.length?`<table><tr><th>الموظف</th><th>الشهر</th><th>الأساسي</th><th>البدلات</th><th>الخصومات</th><th>الصافي</th></tr>${db.salaries.map(x=>`<tr><td>${x.employee}</td><td>${x.month}</td><td>${money(x.basic)}</td><td>${money(x.allow)}</td><td>${money(x.deduct)}</td><td>${money(x.net)}</td></tr>`).join('')}</table>`:'<div class="empty">لا توجد رواتب</div>';
 }
 checkLogin();
