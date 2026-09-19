@@ -160,14 +160,27 @@ body:not(.logged-in) header,body:not(.logged-in) .container{display:none!importa
 </div>
 <script>
 const key='mahaseba_v1';
-let db=JSON.parse(localStorage.getItem(key)||'{"customers":[],"receipts":[],"payments":[],"employees":[],"salaries":[],"companyName":""}');
+let db=JSON.parse(localStorage.getItem(key)||'{"customers":[],"receipts":[],"payments":[],"employees":[],"salaries":[],"companyName":"","projects":[],"quotes":[]}');
 if(!Array.isArray(db.projects)) db.projects=[];
 if(!Array.isArray(db.quotes)) db.quotes=[];
-
-
-
 db.companyName=db.companyName||localStorage.getItem('mahaseba_company_name')||'';
 
+async function loadSharedDB(){
+  try{
+    const r=await fetch('/api/db',{cache:'no-store'});
+    if(!r.ok) throw new Error('server');
+    const payload=await r.json();
+    const remote=payload.database||{};
+    const hasRemote=Object.keys(remote).some(k=>Array.isArray(remote[k]) ? remote[k].length : remote[k]);
+    const localHas=Object.keys(db).some(k=>Array.isArray(db[k]) ? db[k].length : db[k]);
+    if(!hasRemote && localHas){
+      await fetch('/api/db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(db)});
+    }else if(hasRemote){db=remote;}
+    if(!Array.isArray(db.projects)) db.projects=[];
+    if(!Array.isArray(db.quotes)) db.quotes=[];
+    localStorage.setItem(key,JSON.stringify(db));
+  }catch(e){console.warn('الخادم المحلي غير متاح',e);}
+}
 
 let projectEditId=null, quoteEditId=null;
 function fillCustomerSelect(id, selectedId=''){
@@ -299,6 +312,7 @@ function importCompanyData(){
 function save(){localStorage.setItem(key,JSON.stringify(db));render();}
 function saveDB(){
   localStorage.setItem(key,JSON.stringify(db));
+  fetch('/api/db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(db)}).catch(()=>{});
 }
 function reportProjectsByStatus(status){
   const rows=(db.projects||[]).filter(x=>String(x.status||'')===String(status)).map(x=>{
@@ -645,7 +659,8 @@ employeesTable.innerHTML=db.employees.length?`<table><tr><th>الرقم</th><th>
 salariesTable.innerHTML=db.salaries.length?`<table><tr><th>الموظف</th><th>الشهر</th><th>الأساسي</th><th>البدلات</th><th>الخصومات</th><th>الصافي</th></tr>${db.salaries.map(x=>`<tr><td>${x.employee}</td><td>${x.month}</td><td>${money(x.basic)}</td><td>${money(x.allow)}</td><td>${money(x.deduct)}</td><td>${money(x.net)}</td></tr>`).join('')}</table>`:'<div class="empty">لا توجد رواتب</div>';
 }
 checkLogin();
-document.querySelectorAll('input[type=date]').forEach(x=>x.value=new Date().toISOString().slice(0,10));render();
+document.querySelectorAll('input[type=date]').forEach(x=>x.value=new Date().toISOString().slice(0,10));
+loadSharedDB().finally(()=>render());
 </script><script id="mahaseba_login_startup">
 document.addEventListener('DOMContentLoaded',function(){checkLogin();});
 </script>
