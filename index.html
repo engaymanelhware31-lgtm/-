@@ -161,11 +161,20 @@ db.companyName=db.companyName||localStorage.getItem('mahaseba_company_name')||''
 
 
 let projectEditId=null, quoteEditId=null;
-function fillCustomerSelect(id){
+function fillCustomerSelect(id, selectedId=''){
   const e=document.getElementById(id); if(!e)return;
-  e.innerHTML=(db.customers||[]).map(c=>`<option value="${c.id}">${c.name} - رقم ${c.no}</option>`).join('');
+  const customers=db.customers||[];
+  e.innerHTML=customers.length
+    ? customers.map(c=>`<option value="${c.id}" ${String(c.id)===String(selectedId)?'selected':''}>${c.name} - رقم ${c.no}</option>`).join('')
+    : '<option value="">لا يوجد عملاء — أضف العميل أولاً</option>';
 }
+function refreshCustomerLinks(){
+  fillCustomerSelect('projectCustomer', document.getElementById('projectCustomer')?.value||'');
+  fillCustomerSelect('quoteCustomer', document.getElementById('quoteCustomer')?.value||'');
+}
+
 function cname(id){const c=(db.customers||[]).find(x=>String(x.id)===String(id));return c?c.name:'';}
+function projectCustomerName(id){const c=(db.customers||[]).find(x=>String(x.id)===String(id));return c?c.name:'عميل غير موجود';}
 function saveProject(){
  const id=document.getElementById('projectCustomer').value;
  if(!id){alert('يرجى اختيار العميل');return;}
@@ -180,9 +189,10 @@ function editProject(id){
 function cancelProjectEdit(){projectEditId=null;['projectType','projectStart','projectEnd','projectResponsible'].forEach(id=>document.getElementById(id).value='');document.getElementById('projectStatus').value='قيد الرسم';document.getElementById('projectCancelBtn').style.display='none';}
 function deleteProject(id){if(confirm('هل تريد حذف المشروع؟')){db.projects=db.projects.filter(x=>String(x.id)!==String(id));saveDB();renderProjects();}}
 function renderProjects(){
+ fillCustomerSelect('projectCustomer', document.getElementById('projectCustomer')?.value||'');
  const e=document.getElementById('projectsTable');if(!e)return;
  e.innerHTML='<table><thead><tr><th>العميل</th><th>نوع المشروع</th><th>بداية</th><th>نهاية</th><th>الحالة</th><th>المسؤول</th><th>إجراء</th></tr></thead><tbody>'+
- (db.projects||[]).map(x=>`<tr><td>${x.customer}</td><td>${x.type}</td><td>${x.start}</td><td>${x.end}</td><td>${x.status}</td><td>${x.responsible}</td><td><button onclick="editProject('${x.id}')">تعديل</button><button onclick="deleteProject('${x.id}')">حذف</button></td></tr>`).join('')+'</tbody></table>';
+ (db.projects||[]).map(x=>`<tr><td>${projectCustomerName(x.customerId)}</td><td>${x.type}</td><td>${x.start}</td><td>${x.end}</td><td>${x.status}</td><td>${x.responsible}</td><td><button onclick="editProject('${x.id}')">تعديل</button><button onclick="deleteProject('${x.id}')">حذف</button></td></tr>`).join('')+'</tbody></table>';
 }
 function saveQuote(){
  const id=document.getElementById('quoteCustomer').value;if(!id){alert('يرجى اختيار العميل');return;}
@@ -260,6 +270,7 @@ function addCustomer(){
 if(!val('custName'))return alert('أدخل اسم العميل');
 let no=nextCustomerNo();
 db.customers.push({id:Date.now(),no,name:val('custName'),phone:val('custPhone'),project:val('custProject'),address:val('custAddress'),value:+val('custValue')||0});
+refreshCustomerLinks();
 ['custName','custPhone','custProject','custAddress','custValue'].forEach(id=>document.getElementById(id).value='');
 save()
 }
@@ -548,6 +559,7 @@ let rows=db.salaries.map(x=>`<tr><td>${x.employee}</td><td>${x.month}</td><td>${
 printDoc('تقرير الرواتب',documentHeader('تقرير الرواتب','—')+`<table><tr><th>الموظف</th><th>الشهر</th><th>الأساسي</th><th>البدلات</th><th>الخصومات</th><th>الصافي</th></tr>${rows}</table>`);
 }
 function render(){
+refreshCustomerLinks();
 document.getElementById('companyName').value=db.companyName||'';
 document.getElementById('homeCompanyName').textContent=db.companyName||'اسم الشركة';
 document.getElementById('homeCompanyName').textContent=db.companyName||'اسم الشركة';
