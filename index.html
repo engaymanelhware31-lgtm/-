@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>محاسبه</title>
+<title>AYMATECH ERP</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Tahoma,Arial,sans-serif;background:#f4f6f9;color:#172033}
 header{background:#132238;color:white;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}
@@ -33,13 +33,13 @@ body:not(.logged-in) header,body:not(.logged-in) .container{display:none!importa
 <body>
 <div id="login">
 <div class="loginbox">
-<h1>محاسبه</h1>
+<h1>AYMATECH ERP</h1>
 <label>اسم المستخدم</label><input id="loginUser">
 <label>كلمة المرور</label><input id="loginPass" type="password">
 <button type="button" onclick="return login()" style="width:100%">دخول</button>
 </div>
 </div>
-<header><h1>محاسبه</h1><span class="badge">يعمل محليًا بدون إنترنت أو سيرفر</span></header>
+<header><h1>AYMATECH ERP</h1><span class="badge">يعمل محليًا بدون إنترنت أو سيرفر</span></header>
 <div class="container">
 <nav>
 <button onclick="show('home')">الرئيسية</button>
@@ -160,27 +160,14 @@ body:not(.logged-in) header,body:not(.logged-in) .container{display:none!importa
 </div>
 <script>
 const key='mahaseba_v1';
-let db=JSON.parse(localStorage.getItem(key)||'{"customers":[],"receipts":[],"payments":[],"employees":[],"salaries":[],"companyName":"","projects":[],"quotes":[]}');
+let db=JSON.parse(localStorage.getItem(key)||'{"customers":[],"receipts":[],"payments":[],"employees":[],"salaries":[],"companyName":""}');
 if(!Array.isArray(db.projects)) db.projects=[];
 if(!Array.isArray(db.quotes)) db.quotes=[];
+
+
+
 db.companyName=db.companyName||localStorage.getItem('mahaseba_company_name')||'';
 
-async function loadSharedDB(){
-  try{
-    const r=await fetch('/api/db',{cache:'no-store'});
-    if(!r.ok) throw new Error('server');
-    const payload=await r.json();
-    const remote=payload.database||{};
-    const hasRemote=Object.keys(remote).some(k=>Array.isArray(remote[k]) ? remote[k].length : remote[k]);
-    const localHas=Object.keys(db).some(k=>Array.isArray(db[k]) ? db[k].length : db[k]);
-    if(!hasRemote && localHas){
-      await fetch('/api/db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(db)});
-    }else if(hasRemote){db=remote;}
-    if(!Array.isArray(db.projects)) db.projects=[];
-    if(!Array.isArray(db.quotes)) db.quotes=[];
-    localStorage.setItem(key,JSON.stringify(db));
-  }catch(e){console.warn('الخادم المحلي غير متاح',e);}
-}
 
 let projectEditId=null, quoteEditId=null;
 function fillCustomerSelect(id, selectedId=''){
@@ -252,7 +239,7 @@ function printQuote(id){
  <tr><th style="text-align:right;font-size:18px">قيمة العرض</th><td style="font-size:18px;font-weight:700;text-align:left">${money(x.value||0)}</td></tr>
  </table>
  <div style="margin-top:20px;border:1px solid #dfe3e8;border-radius:8px;padding:16px"><b>ملاحظات:</b><div class="notes" style="margin-top:10px">${x.notes||'لا توجد ملاحظات'}</div></div>
- <div class="footer">تم إصدار عرض السعر بواسطة برنامج محاسبه</div>`);
+ <div class="footer">تم إصدار عرض السعر بواسطة AYMATECH ERP</div>`);
 }
 function renderQuotes(){
  const e=document.getElementById('quotesTable');if(!e)return;
@@ -312,7 +299,6 @@ function importCompanyData(){
 function save(){localStorage.setItem(key,JSON.stringify(db));render();}
 function saveDB(){
   localStorage.setItem(key,JSON.stringify(db));
-  fetch('/api/db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(db)}).catch(()=>{});
 }
 function reportProjectsByStatus(status){
   const rows=(db.projects||[]).filter(x=>String(x.status||'')===String(status)).map(x=>{
@@ -434,7 +420,7 @@ w.document.close();w.focus();setTimeout(()=>w.print(),300);
 function documentHeader(type,no,date){
 let company=db.companyName||localStorage.getItem('mahaseba_company_name')||'اسم الشركة';
 let logo=db.companyLogo||'';
-return `<div class="top"><div style="display:flex;align-items:center;gap:14px">${logo?`<img src="${logo}" alt="لوجو المكتب" class="doc-logo">`:''}<div><div class="company">${company}</div><div style="font-size:12px;color:#777;margin-top:5px">نظام محاسبه</div></div></div><div class="type">${type}</div></div>
+return `<div class="top"><div style="display:flex;align-items:center;gap:14px">${logo?`<img src="${logo}" alt="لوجو المكتب" class="doc-logo">`:''}<div><div class="company">${company}</div><div style="font-size:12px;color:#777;margin-top:5px">AYMATECH ERP</div></div></div><div class="type">${type}</div></div>
 <div class="meta"><span><b>رقم السند:</b> ${no}</span><span><b>التاريخ:</b> ${date||new Date().toLocaleDateString('ar-KW')}</span></div>`;
 }
 function printReceipts(){
@@ -448,7 +434,7 @@ printDoc('سند قبض',documentHeader('سند قبض',x.no,x.date)+
 <tr><td>مبلغ سند القبض الحالي</td><td class="amount">${money(x.amount)}</td></tr>
 <tr><td>طريقة الدفع</td><td>${x.method}</td></tr>
 <tr><td>البيان</td><td class="notes">${x.note||''}</td></tr></table>
-<div class="sign"><div>المستلم</div><div>المحاسب</div></div><div class="footer">تم إصدار هذا السند بواسطة برنامج محاسبه</div>`);
+<div class="sign"><div>المستلم</div><div>المحاسب</div></div><div class="footer">تم إصدار هذا السند بواسطة AYMATECH ERP</div>`);
 }
 function printPayments(){
 let x=db.payments[db.payments.length-1];if(!x)return alert('لا يوجد سند صرف');
@@ -458,14 +444,14 @@ printDoc('سند صرف',documentHeader('سند صرف',x.no,x.date)+
 <tr><td>المبلغ</td><td class="amount">${money(x.amount)}</td></tr>
 <tr><td>طريقة الدفع</td><td>${x.method}</td></tr>
 <tr><td>البيان</td><td class="notes">${x.note||''}</td></tr></table>
-<div class="sign"><div>المستفيد</div><div>المحاسب</div></div><div class="footer">تم إصدار هذا السند بواسطة برنامج محاسبه</div>`);
+<div class="sign"><div>المستفيد</div><div>المحاسب</div></div><div class="footer">تم إصدار هذا السند بواسطة AYMATECH ERP</div>`);
 }
 function printSalaries(){
 if(!db.salaries.length)return alert('لا توجد رواتب');
 let rows=db.salaries.map(x=>`<tr><td>${x.employee}</td><td>${x.month}</td><td>${money(x.basic)}</td><td>${money(x.allow)}</td><td>${money(x.deduct)}</td><td class="amount">${money(x.net)}</td></tr>`).join('');
 printDoc('كشف الرواتب',documentHeader('كشف رواتب الموظفين','—')+
 `<table><tr><th>الموظف</th><th>الشهر</th><th>الأساسي</th><th>البدلات</th><th>الخصومات</th><th>الصافي</th></tr>${rows}</table>
-<div class="sign"><div>الموظف</div><div>المحاسب</div></div><div class="footer">تم إصدار كشف الرواتب بواسطة برنامج محاسبه</div>`);
+<div class="sign"><div>الموظف</div><div>المحاسب</div></div><div class="footer">تم إصدار كشف الرواتب بواسطة AYMATECH ERP</div>`);
 }
 
 
@@ -659,8 +645,7 @@ employeesTable.innerHTML=db.employees.length?`<table><tr><th>الرقم</th><th>
 salariesTable.innerHTML=db.salaries.length?`<table><tr><th>الموظف</th><th>الشهر</th><th>الأساسي</th><th>البدلات</th><th>الخصومات</th><th>الصافي</th></tr>${db.salaries.map(x=>`<tr><td>${x.employee}</td><td>${x.month}</td><td>${money(x.basic)}</td><td>${money(x.allow)}</td><td>${money(x.deduct)}</td><td>${money(x.net)}</td></tr>`).join('')}</table>`:'<div class="empty">لا توجد رواتب</div>';
 }
 checkLogin();
-document.querySelectorAll('input[type=date]').forEach(x=>x.value=new Date().toISOString().slice(0,10));
-loadSharedDB().finally(()=>render());
+document.querySelectorAll('input[type=date]').forEach(x=>x.value=new Date().toISOString().slice(0,10));render();
 </script><script id="mahaseba_login_startup">
 document.addEventListener('DOMContentLoaded',function(){checkLogin();});
 </script>
