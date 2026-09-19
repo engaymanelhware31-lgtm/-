@@ -137,6 +137,7 @@ body:not(.logged-in) header,body:not(.logged-in) .container{display:none!importa
 <div class="card"><h2>تفاصيل الشركة</h2>
 <div class="formgrid">
 <div><label>اسم الشركة</label><input id="companyName"></div>
+<div><label>لوجو المكتب</label><input id="companyLogo" type="file" accept="image/*" onchange="previewCompanyLogo(this)"><div id="companyLogoPreview" style="margin-top:10px"></div></div>
 </div>
 <button onclick="saveCompany()">حفظ بيانات الشركة</button>
 </div>
@@ -222,9 +223,9 @@ function printQuote(id){
  const lines=String(x.description||'').split(/\r?\n/).map(v=>v.trim()).filter(Boolean).map(v=>v.replace(/^\s*(?:[0-9٠-٩]+\s*[-–—.)]\s*)?/,'')).slice(0,10);
  const arabicDigits=n=>String(n).replace(/[0-9]/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
  let rows='';
- for(let i=0;i<10;i++){
-   rows+=`<tr><td style="width:65px;text-align:center;font-size:17px;font-weight:700;height:54px">${arabicDigits(i+1)}</td><td style="font-size:17px;padding:12px 16px;height:54px">${lines[i]||''}</td></tr>`;
- }
+ lines.forEach((line,i)=>{
+   rows+=`<tr><td style="width:65px;text-align:center;font-size:17px;font-weight:700;height:54px">${arabicDigits(i+1)}</td><td style="font-size:17px;padding:12px 16px;height:54px">${line}</td></tr>`;
+ });
  printDoc('عرض سعر',documentHeader('عرض سعر',quoteNo,x.date)+
  `<div style="margin-bottom:22px"><h3 style="margin:0 0 10px;color:#132238">بيانات العميل</h3>
  <table><tr><th>العميل</th><th>العنوان</th></tr>
@@ -236,7 +237,6 @@ function printQuote(id){
  </table>
  <table style="width:100%;margin-top:14px;border-collapse:collapse">
  <tr><th style="text-align:right;font-size:18px">قيمة العرض</th><td style="font-size:18px;font-weight:700;text-align:left">${money(x.value||0)}</td></tr>
- <tr><th style="text-align:right;font-size:19px">المبلغ</th><td style="font-size:19px;font-weight:700;text-align:left">${money(x.value||0)}</td></tr>
  </table>
  <div style="margin-top:20px;border:1px solid #dfe3e8;border-radius:8px;padding:16px"><b>ملاحظات:</b><div class="notes" style="margin-top:10px">${x.notes||'لا توجد ملاحظات'}</div></div>
  <div class="footer">تم إصدار عرض السعر بواسطة برنامج محاسبه</div>`);
@@ -377,11 +377,25 @@ function checkLogin(){
   }
 }
 
+function previewCompanyLogo(input){
+  const file=input&&input.files&&input.files[0];
+  if(!file)return;
+  if(!file.type.startsWith('image/')){alert('يرجى اختيار ملف صورة');input.value='';return;}
+  const reader=new FileReader();
+  reader.onload=function(e){db.companyLogo=e.target.result;renderCompanyLogoPreview();};
+  reader.readAsDataURL(file);
+}
+function renderCompanyLogoPreview(){
+  const box=document.getElementById('companyLogoPreview');
+  if(!box)return;
+  box.innerHTML=db.companyLogo?`<img src="${db.companyLogo}" alt="لوجو المكتب" style="max-width:180px;max-height:90px;object-fit:contain;border:1px solid #ddd;border-radius:8px;padding:6px;background:#fff">`:'';
+}
 function saveCompany(){
-db.companyName=val('companyName');
-localStorage.setItem('mahaseba_company_name',db.companyName);
-save();
-alert('تم حفظ بيانات الشركة');
+  db.companyName=val('companyName');
+  localStorage.setItem('mahaseba_company_name',db.companyName);
+  save();
+  renderCompanyLogoPreview();
+  alert('تم حفظ بيانات الشركة');
 }
 function printDoc(title,html){
 let w=window.open('','_blank');
@@ -390,7 +404,7 @@ w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="
 *{box-sizing:border-box}body{margin:0;background:#eef1f5;font-family:Tahoma,Arial,sans-serif;color:#172033}
 .sheet{width:210mm;min-height:297mm;margin:20px auto;background:#fff;padding:18mm;box-shadow:0 2px 12px #0002}
 .top{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #132238;padding-bottom:16px;margin-bottom:24px}
-.company{font-size:22px;font-weight:700;color:#132238}.type{text-align:left;font-size:26px;font-weight:700;color:#132238}
+.doc-logo{max-width:85px;max-height:70px;object-fit:contain}.company{font-size:22px;font-weight:700;color:#132238}.type{text-align:left;font-size:26px;font-weight:700;color:#132238}
 .meta{display:flex;justify-content:space-between;background:#f6f7f9;border:1px solid #e1e5ea;border-radius:8px;padding:12px 16px;margin-bottom:22px}
 table{width:100%;border-collapse:collapse;margin-top:12px}th{background:#132238;color:#fff;padding:13px;text-align:right}td{border:1px solid #dfe3e8;padding:13px}
 .amount{font-size:22px;font-weight:700}.notes{min-height:80px}.sign{display:grid;grid-template-columns:1fr 1fr;gap:50px;margin-top:80px;text-align:center}.sign div{border-top:1px solid #777;padding-top:10px}
@@ -405,7 +419,8 @@ w.document.close();w.focus();setTimeout(()=>w.print(),300);
 }
 function documentHeader(type,no,date){
 let company=db.companyName||localStorage.getItem('mahaseba_company_name')||'اسم الشركة';
-return `<div class="top"><div><div class="company">${company}</div><div style="font-size:12px;color:#777;margin-top:5px">نظام محاسبه</div></div><div class="type">${type}</div></div>
+let logo=db.companyLogo||'';
+return `<div class="top"><div style="display:flex;align-items:center;gap:14px">${logo?`<img src="${logo}" alt="لوجو المكتب" class="doc-logo">`:''}<div><div class="company">${company}</div><div style="font-size:12px;color:#777;margin-top:5px">نظام محاسبه</div></div></div><div class="type">${type}</div></div>
 <div class="meta"><span><b>رقم السند:</b> ${no}</span><span><b>التاريخ:</b> ${date||new Date().toLocaleDateString('ar-KW')}</span></div>`;
 }
 function printReceipts(){
@@ -611,6 +626,7 @@ printDoc('تقرير الرواتب',documentHeader('تقرير الرواتب',
 function render(){
 refreshCustomerLinks();
 document.getElementById('companyName').value=db.companyName||'';
+renderCompanyLogoPreview();
 document.getElementById('homeCompanyName').textContent=db.companyName||'اسم الشركة';
 document.getElementById('homeCompanyName').textContent=db.companyName||'اسم الشركة';
 let projectTotal=db.customers.reduce((a,x)=>a+(Number(x.value)||0),0);
