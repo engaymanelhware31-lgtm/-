@@ -115,7 +115,13 @@ body:not(.logged-in) header,body:not(.logged-in) .container{display:none!importa
 <div><label>تاريخ نهاية المشروع</label><input id="projectEnd" type="date"></div>
 <div><label>حالة المشروع</label><select id="projectStatus"><option>قيد الرسم</option><option>دراسة البلدية</option><option>معتمد نهائي</option></select></div>
 <div><label>المسؤول عن المشروع</label><input id="projectResponsible"></div>
-</div><div style="margin-top:15px"><button onclick="saveProject()">حفظ المشروع</button><button onclick="cancelProjectEdit()" id="projectCancelBtn" style="display:none">إلغاء</button></div>
+</div><div style="margin-top:15px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+<button type="button" onclick="saveProject()">حفظ المشروع</button>
+<button type="button" onclick="cancelProjectEdit()" id="projectCancelBtn" style="display:none">إلغاء</button>
+<button type="button" class="printbtn" onclick="reportProjectsByStatus('قيد الرسم')">تقرير قيد الرسم</button>
+<button type="button" class="printbtn" onclick="reportProjectsByStatus('دراسة البلدية')">تقرير دراسة البلدية</button>
+<button type="button" class="printbtn" onclick="reportProjectsByStatus('معتمد نهائي')">تقرير معتمد نهائي</button>
+</div>
 <div id="projectsTable" style="margin-top:20px"></div></section><section id="quotes" class="page"><h2>عروض الأسعار</h2>
 <div class="form-grid">
 <div><label>العميل</label><select id="quoteCustomer"></select></div>
@@ -262,6 +268,21 @@ function importCompanyData(){
   input.click();
 }
 function save(){localStorage.setItem(key,JSON.stringify(db));render();}
+function saveDB(){
+  localStorage.setItem(key,JSON.stringify(db));
+}
+function reportProjectsByStatus(status){
+  const rows=(db.projects||[]).filter(x=>String(x.status||'')===String(status)).map(x=>{
+    const c=(db.customers||[]).find(c=>String(c.id)===String(x.customerId));
+    return `<tr><td>${c?c.no:''}</td><td>${c?c.name:(x.customer||'')}</td><td>${c?c.phone||'':''}</td><td>${c?c.project||'':''}</td><td>${x.type||''}</td><td>${x.start||''}</td><td>${x.end||''}</td><td>${x.responsible||''}</td></tr>`;
+  }).join('');
+  const count=(db.projects||[]).filter(x=>String(x.status||'')===String(status)).length;
+  printDoc('تقرير المشاريع - '+status,
+    documentHeader('تقرير المشاريع - '+status,'الحالة: '+status)+
+    `<div class="footer">عدد المشاريع: ${count}</div>`+
+    `<table><tr><th>رقم العميل</th><th>العميل</th><th>الهاتف</th><th>اسم المشروع</th><th>نوع المشروع</th><th>البداية</th><th>النهاية</th><th>المسؤول</th></tr>${rows||'<tr><td colspan="8">لا توجد مشاريع بهذه الحالة</td></tr>'}</table>`
+  );
+}
 function show(id){document.querySelectorAll('section').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');render();}
 function val(id){return document.getElementById(id).value.trim()}
 function money(n){return Number(n||0).toFixed(2)}
