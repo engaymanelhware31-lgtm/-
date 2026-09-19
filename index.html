@@ -126,7 +126,9 @@ body:not(.logged-in) header,body:not(.logged-in) .container{display:none!importa
 <div class="form-grid">
 <div><label>العميل</label><select id="quoteCustomer"></select></div>
 <div><label>تاريخ العرض</label><input id="quoteDate" type="date"></div>
-<div><label>وصف العرض</label><input id="quoteDescription"></div>
+<div><label>وصف العرض</label><textarea id="quoteDescription" rows="5" placeholder="1- تصميم معماري
+2- تصميم إنشائي
+3- ..."></textarea></div>
 <div><label>قيمة العرض</label><input id="quoteValue" type="number" min="0" step="0.01"></div>
 <div><label>حالة العرض</label><select id="quoteStatus"><option>جديد</option><option>معتمد</option><option>مرفوض</option></select></div>
 <div><label>ملاحظات</label><input id="quoteNotes"></div>
@@ -212,10 +214,27 @@ function editQuote(id){
 }
 function cancelQuoteEdit(){quoteEditId=null;['quoteDate','quoteDescription','quoteValue','quoteNotes'].forEach(id=>document.getElementById(id).value='');document.getElementById('quoteStatus').value='جديد';document.getElementById('quoteCancelBtn').style.display='none';}
 function deleteQuote(id){if(confirm('هل تريد حذف عرض السعر؟')){db.quotes=db.quotes.filter(x=>String(x.id)!==String(id));saveDB();renderQuotes();}}
+function printQuote(id){
+ const x=(db.quotes||[]).find(q=>String(q.id)===String(id));
+ if(!x)return alert('عرض السعر غير موجود');
+ const c=(db.customers||[]).find(a=>String(a.id)===String(x.customerId))||{};
+ const quoteNo='Q-'+String(x.id).slice(-6);
+ printDoc('عرض سعر',documentHeader('عرض سعر',quoteNo,x.date)+
+ `<div style="margin-bottom:22px"><h3 style="margin:0 0 8px;color:#132238">بيانات العميل</h3>
+ <table><tr><th>العميل</th><th>رقم العميل</th><th>الهاتف</th><th>العنوان</th></tr>
+ <tr><td>${c.name||x.customer||''}</td><td>${c.no||''}</td><td>${c.phone||''}</td><td>${c.address||''}</td></tr></table></div>
+ <h3 style="margin:0 0 8px;color:#132238">تفاصيل عرض السعر</h3>
+ <table style="width:100%;min-height:260px;border-collapse:collapse">
+ <tr><th style="width:75px;text-align:center">م</th><th style="text-align:right">وصف العرض</th><th style="width:150px">قيمة العرض</th></tr>
+ ${String(x.description||'').split(/\r?\n/).map((line,i)=>{const t=line.trim();if(!t)return ''; const clean=t.replace(/^\s*(?:[0-9٠-٩]+\s*[-–—.)]\s*)?/,''); return `<tr><td style="text-align:center;font-size:17px;font-weight:700">${i+1}</td><td style="font-size:17px;padding:14px;min-height:45px">${clean}</td><td class="amount" rowspan="1" style="font-size:17px">${i===0?money(x.value||0):''}</td></tr>`;}).join('')}
+ </table>
+ <div style="margin-top:24px;border:1px solid #dfe3e8;border-radius:8px;padding:16px"><b>ملاحظات:</b><div class="notes" style="margin-top:10px">${x.notes||'لا توجد ملاحظات'}</div></div>
+ <div class="sign"><div>العميل</div><div>المكتب / المحاسب</div></div><div class="footer">تم إصدار عرض السعر بواسطة برنامج محاسبه</div>`);
+}
 function renderQuotes(){
  const e=document.getElementById('quotesTable');if(!e)return;
  e.innerHTML='<table><thead><tr><th>العميل</th><th>التاريخ</th><th>الوصف</th><th>القيمة</th><th>الحالة</th><th>ملاحظات</th><th>إجراء</th></tr></thead><tbody>'+
- (db.quotes||[]).map(x=>`<tr><td>${x.customer}</td><td>${x.date}</td><td>${x.description}</td><td>${Number(x.value||0).toLocaleString('ar-KW')}</td><td>${x.status}</td><td>${x.notes}</td><td><button onclick="editQuote('${x.id}')">تعديل</button><button onclick="deleteQuote('${x.id}')">حذف</button></td></tr>`).join('')+'</tbody></table>';
+ (db.quotes||[]).map(x=>`<tr><td>${x.customer}</td><td>${x.date}</td><td>${x.description}</td><td>${Number(x.value||0).toLocaleString('ar-KW')}</td><td>${x.status}</td><td>${x.notes}</td><td><button onclick="printQuote('${x.id}')">طباعة</button><button onclick="editQuote('${x.id}')">تعديل</button><button onclick="deleteQuote('${x.id}')">حذف</button></td></tr>`).join('')+'</tbody></table>';
 }
 function exportCompanyData(){
   const data = {
