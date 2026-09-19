@@ -29,7 +29,7 @@ body:not(.logged-in) header,body:not(.logged-in) .container{display:none!importa
 .printbtn{background:#555;margin-top:8px}
 @media print{header,nav,.no-print{display:none!important}section{display:none!important}.print-area{display:block!important}.container{margin:0;max-width:none}}
 </style>
-<meta name="mahaseba-build" content="login-fixed-2026-09-19-1858"></head>
+<meta name="mahaseba-build" content="login-guaranteed-2026-09-19-1908"></head>
 <body>
 <div id="login">
 <div class="loginbox">
@@ -270,30 +270,47 @@ function addSalary(){let e=document.getElementById('sEmp').selectedOptions[0];if
 function login(){
   var u=document.getElementById('loginUser');
   var p=document.getElementById('loginPass');
-  var username=u ? String(u.value||'').trim() : '';
-  var password=p ? String(p.value||'') : '';
-  var saved=localStorage.getItem('mahaseba_password') || '';
+  var username=u ? String(u.value || '').trim() : '';
+  var password=p ? String(p.value || '') : '';
 
-  /* Default login is ALWAYS admin / 1234.
-     A password changed from داخل البرنامج is also accepted. */
-  if(username==='admin' && (password==='1234' || (saved && password===saved))){
-    localStorage.setItem('mahaseba_logged_in','1');
-    document.body.classList.add('logged-in');
-    if(typeof render==='function'){try{render();}catch(e){}}
-    if(typeof fillCustomerSelect==='function'){
-      try{fillCustomerSelect('projectCustomer');fillCustomerSelect('quoteCustomer');}catch(e){}
+  /* الدخول الافتراضي */
+  if(username !== 'admin' || password !== '1234'){
+    var saved = '';
+    try { saved = localStorage.getItem('mahaseba_password') || ''; } catch(e) {}
+    if(!(username === 'admin' && saved && password === saved)){
+      alert('اسم المستخدم أو كلمة المرور غير صحيحة');
+      if(p){p.focus();p.select();}
+      return false;
     }
-    if(typeof renderProjects==='function'){try{renderProjects();}catch(e){}}
-    if(typeof renderQuotes==='function'){try{renderQuotes();}catch(e){}}
-    return false;
   }
-  alert('اسم المستخدم أو كلمة المرور غير صحيحة');
-  if(p){p.focus();p.select();}
+
+  /* نجاح الدخول: إخفاء شاشة الدخول وإظهار البرنامج مباشرة */
+  try { localStorage.setItem('mahaseba_logged_in','1'); } catch(e) {}
+  document.body.classList.add('logged-in');
+  var loginBox=document.getElementById('login');
+  if(loginBox) loginBox.style.display='none';
+  var header=document.querySelector('header');
+  var container=document.querySelector('.container');
+  if(header) header.style.display='block';
+  if(container) container.style.display='block';
+
+  try { if(typeof render==='function') render(); } catch(e) {}
+  try { if(typeof fillCustomerSelect==='function'){fillCustomerSelect('projectCustomer');fillCustomerSelect('quoteCustomer');} } catch(e) {}
+  try { if(typeof renderProjects==='function') renderProjects(); } catch(e) {}
+  try { if(typeof renderQuotes==='function') renderQuotes(); } catch(e) {}
   return false;
 }
 function checkLogin(){
-  if(localStorage.getItem('mahaseba_logged_in')==='1'){
+  var logged=false;
+  try { logged=localStorage.getItem('mahaseba_logged_in')==='1'; } catch(e) {}
+  if(logged){
     document.body.classList.add('logged-in');
+    var loginBox=document.getElementById('login');
+    if(loginBox) loginBox.style.display='none';
+    var header=document.querySelector('header');
+    var container=document.querySelector('.container');
+    if(header) header.style.display='block';
+    if(container) container.style.display='block';
   }else{
     document.body.classList.remove('logged-in');
   }
