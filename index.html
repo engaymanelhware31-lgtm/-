@@ -152,6 +152,8 @@ let db=JSON.parse(localStorage.getItem(key)||'{"customers":[],"receipts":[],"pay
 if(!Array.isArray(db.projects)) db.projects=[];
 if(!Array.isArray(db.quotes)) db.quotes=[];
 
+
+
 db.companyName=db.companyName||localStorage.getItem('mahaseba_company_name')||'';
 
 
@@ -263,16 +265,36 @@ function addPayment(){let a=+val('pAmount');if(!val('pBeneficiary')||!a)return a
 function addEmployee(){if(!val('empName'))return alert('أدخل اسم الموظف');db.employees.push({id:Date.now(),name:val('empName'),no:val('empNo'),job:val('empJob'),salary:+val('empSalary')||0});save()}
 function addSalary(){let e=document.getElementById('sEmp').selectedOptions[0];if(!e)return;let emp=db.employees.find(x=>x.id==e.value),allow=+val('sAllow')||0,deduct=+val('sDeduct')||0;db.salaries.push({employee:emp.name,month:val('sMonth'),basic:emp.salary,allow,deduct,net:emp.salary+allow-deduct});save()}
 function login(){
-if(val('loginUser')==='admin' && document.getElementById('loginPass').value===(localStorage.getItem('mahaseba_password')||'1234')){
-localStorage.setItem('mahaseba_logged_in','1');
-document.getElementById('login').style.display='none';
-}else alert('اسم المستخدم أو كلمة المرور غير صحيحة');
+  const user=(document.getElementById('loginUser')?.value||'').trim();
+  const pass=document.getElementById('loginPass')?.value||'';
+  const saved=localStorage.getItem('mahaseba_password')||'1234';
+  if(user==='admin' && pass===saved){
+    localStorage.setItem('mahaseba_logged_in','1');
+    const el=document.getElementById('login');
+    if(el) el.style.display='none';
+    const app=document.getElementById('app');
+    if(app) app.style.display='';
+    if(typeof fillCustomerSelect==='function'){fillCustomerSelect('projectCustomer');fillCustomerSelect('quoteCustomer');}
+    if(typeof renderProjects==='function') renderProjects();
+    if(typeof renderQuotes==='function') renderQuotes();
+  }else{
+    alert('اسم المستخدم أو كلمة المرور غير صحيحة');
+  }
 }
+
 function checkLogin(){
-if(localStorage.getItem('mahaseba_logged_in')==='1'){
-document.getElementById('login').style.display='none';
+  const logged=localStorage.getItem('mahaseba_logged_in')==='1';
+  const loginEl=document.getElementById('login');
+  const app=document.getElementById('app');
+  if(logged){
+    if(loginEl) loginEl.style.display='none';
+    if(app) app.style.display='';
+  }else{
+    if(loginEl) loginEl.style.display='';
+    if(app) app.style.display='none';
+  }
 }
-}
+
 function saveCompany(){
 db.companyName=val('companyName');
 localStorage.setItem('mahaseba_company_name',db.companyName);
@@ -307,7 +329,25 @@ document.addEventListener("DOMContentLoaded",function(){
   if(el) el.value=getCompanyInstallId();
 });
 </script>
-<script>document.addEventListener('DOMContentLoaded',function(){fillCustomerSelect('projectCustomer');fillCustomerSelect('quoteCustomer');renderProjects();renderQuotes();});</script></body></html>`);
+<script>document.addEventListener('DOMContentLoaded',function(){fillCustomerSelect('projectCustomer');fillCustomerSelect('quoteCustomer');renderProjects();renderQuotes();});</script>
+<script id="mahaseba_login_startup_fix">
+document.addEventListener('DOMContentLoaded',function(){
+  const loginScreen=document.getElementById('loginScreen');
+  const app=document.getElementById('app');
+  const loggedIn=localStorage.getItem('mahaseba_logged_in')==='1';
+  if(loggedIn){
+    if(loginScreen) loginScreen.style.display='none';
+    if(app) app.style.display='block';
+    if(typeof fillCustomerSelect==='function'){fillCustomerSelect('projectCustomer');fillCustomerSelect('quoteCustomer');}
+    if(typeof renderProjects==='function') renderProjects();
+    if(typeof renderQuotes==='function') renderQuotes();
+  }else{
+    if(loginScreen) loginScreen.style.display='flex';
+    if(app) app.style.display='none';
+  }
+});
+</script>
+<script id='mahaseba_login_check_final'>document.addEventListener('DOMContentLoaded',function(){checkLogin();});</script></body></html>`);
 w.document.close();w.focus();setTimeout(()=>w.print(),300);
 }
 function documentHeader(type,no,date){
