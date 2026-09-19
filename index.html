@@ -330,39 +330,10 @@ table{width:100%;border-collapse:collapse;margin-top:12px}th{background:#132238;
 .footer{margin-top:40px;padding-top:10px;border-top:1px solid #ddd;text-align:center;font-size:11px;color:#777}
 @media print{body{background:#fff}.sheet{margin:0;box-shadow:none;width:auto;min-height:auto}button{display:none}}
 </style></head><body><div class="sheet">${html}</div>
-<script>
-function getCompanyInstallId(){
-  let id=localStorage.getItem("mahaseba_company_id");
-  if(!id){
-    id="company_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8);
-    localStorage.setItem("mahaseba_company_id",id);
-  }
-  return id;
-}
-document.addEventListener("DOMContentLoaded",function(){
-  const el=document.getElementById("companyInstallId");
-  if(el) el.value=getCompanyInstallId();
-});
-</script>
-<script>document.addEventListener('DOMContentLoaded',function(){fillCustomerSelect('projectCustomer');fillCustomerSelect('quoteCustomer');renderProjects();renderQuotes();});</script>
-<script id="mahaseba_login_startup_fix">
-document.addEventListener('DOMContentLoaded',function(){
-  const loginScreen=document.getElementById('loginScreen');
-  const app=document.getElementById('app');
-  const loggedIn=localStorage.getItem('mahaseba_logged_in')==='1';
-  if(loggedIn){
-    if(loginScreen) loginScreen.style.display='none';
-    if(app) app.style.display='block';
-    if(typeof fillCustomerSelect==='function'){fillCustomerSelect('projectCustomer');fillCustomerSelect('quoteCustomer');}
-    if(typeof renderProjects==='function') renderProjects();
-    if(typeof renderQuotes==='function') renderQuotes();
-  }else{
-    if(loginScreen) loginScreen.style.display='flex';
-    if(app) app.style.display='none';
-  }
-});
-</script>
-<script id='mahaseba_login_check_final'>document.addEventListener('DOMContentLoaded',function(){checkLogin();});</script></body></html>`);
+
+
+
+</body></html>`);
 w.document.close();w.focus();setTimeout(()=>w.print(),300);
 }
 function documentHeader(type,no,date){
@@ -463,9 +434,12 @@ let confirmPass=prompt('تأكيد كلمة المرور الجديدة');if(con
 localStorage.setItem('mahaseba_password',next);alert('تم تغيير كلمة المرور');
 }
 function logout(){
-localStorage.removeItem('mahaseba_logged_in');
-document.getElementById('login').style.display='flex';
-document.getElementById('loginPass').value='';
+  localStorage.removeItem('mahaseba_logged_in');
+  const loginEl=document.getElementById('login');
+  const all=document.querySelectorAll('body > *');
+  all.forEach(el=>{if(el!==loginEl){el.style.display='none';el.hidden=true;}});
+  if(loginEl){loginEl.style.display='flex';loginEl.hidden=false;}
+  const pass=document.getElementById('loginPass'); if(pass) pass.value='';
 }
 
 function reportCustomerStatements(){
@@ -588,6 +562,15 @@ salariesTable.innerHTML=db.salaries.length?`<table><tr><th>الموظف</th><th>
 }
 checkLogin();
 document.querySelectorAll('input[type=date]').forEach(x=>x.value=new Date().toISOString().slice(0,10));render();
+</script><script id="mahaseba_login_startup">
+document.addEventListener('DOMContentLoaded', function(){
+  checkLogin();
+  if(localStorage.getItem('mahaseba_logged_in')==='1'){
+    if(typeof fillCustomerSelect==='function'){fillCustomerSelect('projectCustomer');fillCustomerSelect('quoteCustomer');}
+    if(typeof renderProjects==='function') renderProjects();
+    if(typeof renderQuotes==='function') renderQuotes();
+  }
+});
 </script>
 </body>
 </html>
