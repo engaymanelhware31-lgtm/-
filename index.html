@@ -26,6 +26,17 @@ table{width:100%;border-collapse:collapse;background:white}th,td{padding:12px;bo
 .printbtn{background:#555;margin-top:8px}
 @media print{header,nav,.no-print{display:none!important}section{display:none!important}.print-area{display:block!important}.container{margin:0;max-width:none}}
 </style>
+<script id="mahaseba_password_reset_v2">
+(function(){
+  try{
+    if(localStorage.getItem('mahaseba_login_reset_v2')!=='1'){
+      localStorage.setItem('mahaseba_password','1234');
+      localStorage.removeItem('mahaseba_logged_in');
+      localStorage.setItem('mahaseba_login_reset_v2','1');
+    }
+  }catch(e){}
+})();
+</script>
 </head>
 <body>
 <div id="login">
@@ -269,7 +280,7 @@ function login(){
   var p=document.getElementById('loginPass');
   var username=u ? String(u.value||'').trim() : '';
   var password=p ? String(p.value||'') : '';
-  var saved=localStorage.getItem('mahaseba_password') || '1234';
+  var saved=localStorage.getItem('mahaseba_password'); if(!saved){saved='1234';localStorage.setItem('mahaseba_password',saved);}
 
   if(username==='admin' && password===saved){
     localStorage.setItem('mahaseba_logged_in','1');
