@@ -21,8 +21,11 @@ input,select,textarea{width:100%;padding:11px;border:1px solid #d5dbe3;border-ra
 table{width:100%;border-collapse:collapse;background:white}th,td{padding:12px;border-bottom:1px solid #eee;text-align:right}
 .empty{padding:30px;text-align:center;color:#777}
 .notice{background:#fff8df;padding:12px;border-radius:8px;margin-bottom:16px}
-#login{position:fixed;inset:0;background:#f4f6f9;display:flex;align-items:center;justify-content:center;z-index:10}
+#login{position:fixed;inset:0;background:#f4f6f9;display:flex;align-items:center;justify-content:center;z-index:999999}
 .loginbox{width:min(420px,92%);background:white;padding:30px;border-radius:14px;box-shadow:0 5px 25px #0002}.loginbox h1{text-align:center;margin-top:0}
+body.logged-in #login{display:none!important}
+body.logged-in header,body.logged-in .container{display:block!important}
+body:not(.logged-in) header,body:not(.logged-in) .container{display:none!important}
 .printbtn{background:#555;margin-top:8px}
 @media print{header,nav,.no-print{display:none!important}section{display:none!important}.print-area{display:block!important}.container{margin:0;max-width:none}}
 </style>
