@@ -265,33 +265,48 @@ function addPayment(){let a=+val('pAmount');if(!val('pBeneficiary')||!a)return a
 function addEmployee(){if(!val('empName'))return alert('أدخل اسم الموظف');db.employees.push({id:Date.now(),name:val('empName'),no:val('empNo'),job:val('empJob'),salary:+val('empSalary')||0});save()}
 function addSalary(){let e=document.getElementById('sEmp').selectedOptions[0];if(!e)return;let emp=db.employees.find(x=>x.id==e.value),allow=+val('sAllow')||0,deduct=+val('sDeduct')||0;db.salaries.push({employee:emp.name,month:val('sMonth'),basic:emp.salary,allow,deduct,net:emp.salary+allow-deduct});save()}
 function login(){
-  const user=(document.getElementById('loginUser')?.value||'').trim();
-  const pass=document.getElementById('loginPass')?.value||'';
-  const saved=localStorage.getItem('mahaseba_password')||'1234';
-  if(user==='admin' && pass===saved){
+  const userEl=document.getElementById('loginUser');
+  const passEl=document.getElementById('loginPass');
+  const user=userEl ? String(userEl.value||'').trim() : '';
+  const pass=passEl ? String(passEl.value||'') : '';
+  const savedPassword=localStorage.getItem('mahaseba_password') || '1234';
+
+  if(user === 'admin' && pass === savedPassword){
     localStorage.setItem('mahaseba_logged_in','1');
-    const el=document.getElementById('login');
-    if(el) el.style.display='none';
-    const app=document.getElementById('app');
-    if(app) app.style.display='';
-    if(typeof fillCustomerSelect==='function'){fillCustomerSelect('projectCustomer');fillCustomerSelect('quoteCustomer');}
-    if(typeof renderProjects==='function') renderProjects();
-    if(typeof renderQuotes==='function') renderQuotes();
+    showLoggedInApp();
   }else{
     alert('اسم المستخدم أو كلمة المرور غير صحيحة');
+    if(passEl){passEl.focus(); passEl.select();}
   }
+}
+function showLoggedInApp(){
+  const loginEl=document.getElementById('login');
+  if(loginEl){loginEl.style.display='none';loginEl.hidden=true;}
+  // The application content in this version is the main container after the login screen.
+  const mainEls=document.querySelectorAll('body > *:not(#login)');
+  mainEls.forEach(el=>{
+    el.style.display='';
+    el.hidden=false;
+  });
+  try{
+    if(typeof fillCustomerSelect==='function'){
+      fillCustomerSelect('projectCustomer');
+      fillCustomerSelect('quoteCustomer');
+    }
+    if(typeof renderProjects==='function') renderProjects();
+    if(typeof renderQuotes==='function') renderQuotes();
+  }catch(e){}
 }
 
 function checkLogin(){
   const logged=localStorage.getItem('mahaseba_logged_in')==='1';
   const loginEl=document.getElementById('login');
-  const app=document.getElementById('app');
+  const all=document.querySelectorAll('body > *');
   if(logged){
-    if(loginEl) loginEl.style.display='none';
-    if(app) app.style.display='';
+    showLoggedInApp();
   }else{
-    if(loginEl) loginEl.style.display='';
-    if(app) app.style.display='none';
+    all.forEach(el=>{if(el!==loginEl){el.style.display='none';el.hidden=true;}});
+    if(loginEl){loginEl.style.display='flex';loginEl.hidden=false;}
   }
 }
 
