@@ -312,7 +312,7 @@ function reportProjectsByStatus(status){
     `<table><tr><th>رقم العميل</th><th>العميل</th><th>الهاتف</th><th>اسم المشروع</th><th>نوع المشروع</th><th>البداية</th><th>النهاية</th><th>المسؤول</th></tr>${rows||'<tr><td colspan="8">لا توجد مشاريع بهذه الحالة</td></tr>'}</table>`
   );
 }
-function show(id){document.querySelectorAll('section').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');render();}
+function show(id){document.querySelectorAll('section').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');render();if(id==='quotes')renderQuotes();}
 function val(id){return document.getElementById(id).value.trim()}
 function money(n){return Number(n||0).toFixed(2)}
 function nextCustomerNo(){return db.customers.length?Math.max(...db.customers.map(x=>Number(x.no)||0))+1:1}
@@ -646,6 +646,18 @@ salariesTable.innerHTML=db.salaries.length?`<table><tr><th>الموظف</th><th>
 }
 checkLogin();
 document.querySelectorAll('input[type=date]').forEach(x=>x.value=new Date().toISOString().slice(0,10));render();
+// تسجيل الخروج تلقائيًا بعد دخول الجهاز/المتصفح في حالة السكون أو البقاء مخفيًا
+let sleepLogoutTimer=null;
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden){
+    clearTimeout(sleepLogoutTimer);
+    sleepLogoutTimer=setTimeout(function(){
+      if(document.hidden && localStorage.getItem('mahaseba_logged_in')==='1') logout();
+    },30000);
+  }else{
+    clearTimeout(sleepLogoutTimer);
+  }
+});
 </script><script id="mahaseba_login_startup">
 document.addEventListener('DOMContentLoaded',function(){checkLogin();});
 </script>
